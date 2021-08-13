@@ -450,11 +450,11 @@ discover_unowned_devices(int scope)
   //PRINT("[C]discover_unowned_devices: scope %d\n", scope);
   otb_mutex_lock(app_sync_lock);
   if (scope == 0x02) {
-    oc_obt_discover_unowned_devices(unowned_device_cb, NULL);
+    oc_obt_discover_unowned_devices(unowned_device_cb, NULL, NULL);
   } else if (scope == 0x03) {
-    oc_obt_discover_unowned_devices_realm_local_ipv6(unowned_device_cb, NULL);
+    oc_obt_discover_unowned_devices_realm_local_ipv6(unowned_device_cb, NULL,NULL);
   } else if (scope == 0x05) {
-    oc_obt_discover_unowned_devices_site_local_ipv6(unowned_device_cb, NULL);
+    oc_obt_discover_unowned_devices_site_local_ipv6(unowned_device_cb, NULL,NULL);
   }
   otb_mutex_unlock(app_sync_lock);
   signal_event_loop();
@@ -466,11 +466,11 @@ py_discover_unowned_devices(int scope)
   //PRINT("[C]discover_unowned_devices: scope %d\n", scope);
   otb_mutex_lock(app_sync_lock);
   if (scope == 0x02) {
-    oc_obt_discover_unowned_devices(unowned_device_cb, NULL);
+    oc_obt_discover_unowned_devices(unowned_device_cb, NULL,NULL);
   } else if (scope == 0x03) {
-    oc_obt_discover_unowned_devices_realm_local_ipv6(unowned_device_cb, NULL);
+    oc_obt_discover_unowned_devices_realm_local_ipv6(unowned_device_cb, NULL,NULL);
   } else if (scope == 0x05) {
-    oc_obt_discover_unowned_devices_site_local_ipv6(unowned_device_cb, NULL);
+    oc_obt_discover_unowned_devices_site_local_ipv6(unowned_device_cb, NULL,NULL);
   }
   otb_mutex_unlock(app_sync_lock);
   signal_event_loop();

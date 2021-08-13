@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <title>OCF Onboarding Tool</title>
+    <link rel="stylesheet" href="include/page.css">
+    <link rel="stylesheet" href="include/css/multi-select.css">
+    <link rel="stylesheet" href="include/jquery-ui.min.css">
+    <link rel="apple-touch-icon" sizes="180x180" href="include/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="include/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="include/favicon/favicon-16x16.png">
+    <link rel="manifest" href="include/favicon/site.webmanifest">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+  </head>
+  <body>
+	  <div class='wrapper'>
+<header>
+	<img src="include/images/ocf-logo.png" style="float:left;max-width:50%">
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="include/jquery-ui.min.js"></script>
+    <script src="include/javascript/jquery.multi-select.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.2/socket.io.js"></script>
+      <script>
+/* Jquery Function*/
+var dialog;
+      $( function(){
+	      /*QR Dialog*/
+  dialog = $( "#qr-container" ).dialog({
+      modal: true,
+      autoOpen: false,
+      maxWidth:600,
+      maxHeight: 700,
+      width: 600,
+      height: 700,
+      open: function() {
+        $('.ui-widget-overlay').addClass('custom-overlay');
+      },   
+      buttons: {
+        Ok: function() {
+          $( this ).dialog( "close" );
+        }
+      }
+    });
+    $( "#qr-button" ).button().on( "click", function() {
+      dialog.dialog( "open" );
+    });
+}); /*====================End Jquery=======================*/
+
+      var imagePath = 'include/images/';
+
+      var unowned_devices_stack = []; 
+      var owned_devices_stack = []; 
+      var unowned_delete_stack = [];
+      var owned_delete_stack = [];
+
+      var resources_array = [];
+
+
+function openDeviceDialog(device)
+{
+	$("#device_dialog_"+device).dialog("open");
+}
+
+function showWait(parentId){
+	var b = document.getElementById(parentId);
+	var image = document.createElement("img");
+	image.setAttribute('id',parentId+'_wait_image');
+	image.setAttribute('src',imagePath+'loader.gif');
+	b.append(image);
+}
+
+  function hideWait(parentId){
+	try{
+		var d = document.getElementById(parentId+'_wait_image');
+		d.remove();
+	}catch{
+	}
+  }
+
+function toggle_qr(){
+  var qr = document.getElementById("qr-container");
+  var qr_button = document.getElementById("qr-button");
+  if (qr.style.display === "none") {
+    qr.style.display = "block";
+    qr_button.innerHTML = "Hide QR Scanner";	  
+  } else {
+    qr.style.display = "none";
+    qr_button.innerHTML = "Show QR Scanner";	  
+  }
+}
+
+function capitalize(s)
+{
+    return s[0].toUpperCase() + s.slice(1);
+}
+
+function formatUUID(s)
+{
+	var sarray = s.split("-");
+	var ret = sarray[0]+"-"+sarray[1]+"-"+sarray[2]+"<br>"+sarray[3]+"-"+sarray[4];
+	return ret;
+}
+
+function deviceButtonMouseOver(uuid,text)
+{
+	//alert(uuid);
+	document.getElementById('statusbutton_'+uuid).innerHTML=text;
+}
+
+  </script>
+</header>
+<section>
+	<button id='button_discover' type="button" class="w3-button w3-round-large w3-light-blue nav-button" onclick="discover_devices()">Discover Devices </button>
+	<!--<button id='qr-button' type="button" class="w3-button w3-round-large w3-light-blue nav-button" onclick="toggle_qr()">Show QR Scanner </button>-->
+	<button id='qr-button' type="button" class="w3-button w3-round-large w3-light-blue nav-button" >Show QR Scanner </button>
+    <script src="include/html5-qrcode.min.js"></script>
+        <div id="qr-container">
+		<div id="qr-reader" style="width:500px"></div>
+		<div id="qr-reader-results"></div>
+	</div>
+<button type="button" class="collapsible">Unowned Devices</button>
+  <div class="content" id="unowned_devices" style="max-height:100%">
+  </div>
+<button type="button" class="collapsible">Owned Devices</button>
+  <div class="content" id="owned_devices" style="max-height:100%">
+  </div>
+    
+  
+<script>
+
+var resultContainer = document.getElementById('qr-reader-results');
+var lastResult, countResults = 0;
+
+function onScanSuccess(decodedText, decodedResult) {
+    if (decodedText !== lastResult) {
+        ++countResults;
+        lastResult = decodedText;
+        // Handle on success condition with the decoded message.
+        console.log(`Scan result ${decodedText}`, decodedResult);
+	var results = document.getElementById('qr-reader-results');
+	results.innerHTML=decodedText;
+    }
+}
+
+var html5QrcodeScanner = new Html5QrcodeScanner(
+    "qr-reader", { fps: 10, qrbox: 250 });
+html5QrcodeScanner.render(onScanSuccess);
+
+var coll = document.getElementsByClassName("collapsible");
+var i;
+
+for (i = 0; i < coll.length; i++) {
+  coll[i].addEventListener("click", function() {
+    this.classList.toggle("active");
+    var content = this.nextElementSibling;
+    if (content.style.maxHeight){
+      content.style.maxHeight = null;
+    } else {
+      content.style.maxHeight = content.scrollHeight + "px";
+    } 
+  });
+}
+
+    </script>
+
+
+    <div id='device_container' class="message_holder"></div>
+
+
+<style>
+    .ui-progressbar-value {
+      background: lightgreen;
+    }
+      .progress-label {
+    position: absolute;
+    top: 4px;
+    font-weight: bold;
+  }
+</style>
+    <script type="text/javascript">
+      var imagePath = 'include/images/';
+      function buildDevice(uuid, ownedState,name){
+	        
+	    if (ownedState =='unowned'){
+		var card = document.createElement("div");
+			card.setAttribute('id',uuid);
+			card.setAttribute('class','w3-card-4 w3-grey w3-round');
+			card.setAttribute('style','width:220px;padding:5px;float:left;min-height:200px;margin:5px;display:none');
+		    var label = document.createElement("header");
+			    label.setAttribute('class','w3-container  w3-round device-label');
+			    label.setAttribute('id','label_'+uuid);
+		    	    var name_label = document.createElement("div");
+		    	    name_label.setAttribute('id','name_label_'+uuid);
+			    name_label.setAttribute('class','name-label');
+		    	    name_label.innerHTML = name;
+		    	    var uuid_label = document.createElement("div");
+		    	    uuid_label.setAttribute('id','uuid_label_'+uuid);
+			    uuid_label.setAttribute('class','uuid-label');
+		            var formatted_uuid = formatUUID(uuid);
+		    	    uuid_label.innerHTML = formatted_uuid;
+		    	    if(name){
+				    label.append(name_label);
+			    	    uuid_label.setAttribute('style','font-size:8px');
+				    label.append(uuid_label);
+			    }else
+			    {	
+			    	    uuid_label.setAttribute('style','font-size:12px');
+				    label.append(uuid_label);
+			    }
+		    var imageContainer = document.createElement("div");
+			    imageContainer.setAttribute('class','w3-container w3-round image-container');
+			    imageContainer.setAttribute('id','image_container_'+uuid);
+			    var image = document.createElement("img");
+				    image.setAttribute('id','image_'+uuid);
+				    image.setAttribute('src',imagePath+'ocf.png');
+				    image.setAttribute('style','width:100%;margin:5px');
+	      		   imageContainer.append(image);
+
+		    var statusContainer = document.createElement("div");
+			    statusContainer.setAttribute('class','w3-container w3-white');
+			    statusContainer.setAttribute('style','margin:2px;font-size:12px;padding:2px;width:98%;position:absolute;left:0;bottom:0;opacity:0.8');
+			    statusContainer.setAttribute('id','status_container_'+uuid)
+			    var statusTxt = document.createElement("div");
+				statusTxt.setAttribute('id','statusTxt_'+uuid);
+				statusTxt.setAttribute('style','margin:5px;float:left');
+		    		console.log("#statusTxt_"+uuid);
+				    statusTxt.innerHTML = "<b>"+capitalize(ownedState)+"<br> Device</b>";
+			    statusContainer.append(statusTxt);
+	      		    var button = document.createElement("div");
+				button.setAttribute('id','statusbutton_'+uuid);
+				button.setAttribute('onclick','onboardDevice("'+uuid+'")');
+				button.setAttribute('class','w3-button w3-green w3-round-large');
+				button.innerHTML = "+";
+				button.setAttribute('style','margin:2px;float:right;font-size:20px;opacity:1');
+	      		    statusContainer.append(button);
+		   imageContainer.append(statusContainer);
+
+	      card.append(label);
+	      card.append(imageContainer);
+	      }//////////End Unowned State
+	      else{
+		var card = document.createElement("div");
+			card.setAttribute('id',uuid);
+			card.setAttribute('class','w3-card-4 w3-grey w3-round');
+			card.setAttribute('style','width:220px;padding:5px;float:left;min-height:200px;margin:5px;display:none');
+		    var label = document.createElement("header");
+			    label.setAttribute('class','w3-container w3-round device-label');
+			    label.setAttribute('id','label_'+uuid);
+		    	    var name_label = document.createElement("div");
+		    	    name_label.setAttribute('id','name_label_'+uuid);
+			    name_label.setAttribute('class','name-label');
+		    	    name_label.innerHTML = name;
+		    	    var uuid_label = document.createElement("div");
+		    	    uuid_label.setAttribute('id','uuid_label_'+uuid);
+			    uuid_label.setAttribute('class','uuid-label');
+		            var formatted_uuid = formatUUID(uuid);
+		    	    uuid_label.innerHTML = formatted_uuid;
+		    	    if(name){
+				    label.append(name_label);
+			    	    uuid_label.setAttribute('style','font-size:8px');
+				    label.append(uuid_label);
+			    }else
+			    {	
+				    label.append(uuid_label);
+			    }
+		    var imageContainer = document.createElement("div");
+			    imageContainer.setAttribute('class','w3-container w3-round image-container');
+			    imageContainer.setAttribute('id','image_container_'+uuid);
+			    var image = document.createElement("img");
+				    image.setAttribute('id','image_'+uuid);
+				    image.setAttribute('src',imagePath+'ocf.png');
+				    image.setAttribute('style','width:100%;margin:5px;');
+		      		    image.setAttribute('onclick','openDeviceDialog("'+uuid+'")');
+	      		   imageContainer.append(image);
+
+		    var statusContainer = document.createElement("div");
+			    statusContainer.setAttribute('class','w3-container w3-white');
+			    statusContainer.setAttribute('style','margin:2px;font-size:12px;padding:2px;width:98%;position:absolute;left:0;bottom:0;opacity:0.8');
+			    statusContainer.setAttribute('id','status_container_'+uuid)
+			    var statusTxt = document.createElement("div");
+				statusTxt.setAttribute('id','statusTxt_'+uuid);
+				statusTxt.setAttribute('style','margin:5px;float:left');
+				      statusTxt.innerHTML = "<b>"+capitalize(ownedState) +"<br> Device</b>";
+			    statusContainer.append(statusTxt);
+	      		    var button = document.createElement("div");
+				button.setAttribute('id','statusbutton_'+uuid);
+				button.setAttribute('onclick','offboardDevice("'+uuid+'")');
+				button.setAttribute('class','w3-button w3-red w3-round-large');
+				button.innerHTML = "X";
+				button.setAttribute('style','margin:2px;float:right;font-size:20px;opacity:1');
+	      		    statusContainer.append(button);
+		   imageContainer.append(statusContainer);
+		      /*This defines a dialog for owned devices opens on click of image*/
+		      var device_title="";
+		      if (name)
+		      {
+			device_title = name+" " + uuid;
+		      }
+		      else
+		      {
+			device_title = uuid;
+		      }
+		      $('<div id="device_dialog_'+uuid+'"></div>').dialog({
+				modal: true,
+				title: device_title,
+			      autoOpen: false,
+			      maxWidth:600,
+			      maxHeight: 700,
+			      width: 600,
+			      height: 700,
+			      create: function() {
+				  /*These are the tabs on the dialog*/
+				  var device_tabs = $(`<div id="device_tabs_`+uuid+`">
+					  <ul>
+					    <li><a href="#client"+uuid>Client</a></li>
+					    <li><a href="#credentials"+uuid>Credentials</a></li>
+					    <li><a href="#access_control"+uuid>Access Control</a></li>
+					    <li><a href="#resources"+uuid>Resources</a></li>
+					  </ul>
+					  <div id="client">
+					    <p>
+					         /a/light
+					  </p>
+						  <label class="switch">
+						  <input type="checkbox" id='switch_`+uuid+`' onchange=send_command(this)>
+						  <span class="slider round"></span>
+						</label>
+					  </p>
+					  <p>
+					  /a/brightlight
+					  </p>
+					  <p>
+						<div class="slidecontainer">
+						  <input type="range" min="1" max="100" value="50">
+						</div>
+					  </p>
+
+					  </div>
+					  <div id="credentials">
+					    <p>Credential Type:
+						<select id='crewdential_selector_`+uuid+`'>
+					  		<option disabled selected> Choose a credential type</option>
+					  		<option value='pairwise'>Pairwise</option>
+					  		<option value='role'>Role</option>
+					  	</select>
+					    </p>
+					    <p id='cred_`+uuid+`'>
+					    	<select id='credential_device_selector_`+uuid+`' multiple='multiple'>
+						</select>
+					    </p>
+					  </div>
+					  <div id="access_control">
+					    <p> Resource
+						  <select id='access_control_resource_selector_`+uuid+`'>
+					          	<option disabled selected> Choose a resource</option> 
+					  	  </select>
+					    </p>
+					    <p>
+					  	<fieldset id='access_control_permissions_`+uuid+`'>
+
+							  <input type='checkbox' checked name='access_control_permissions_check_`+uuid+`' value='create'>Create</input>
+							  <input type='checkbox' checked name='access_control_permissions_check_`+uuid+`' value='retrieve'>Retrieve</input>
+							  <input type='checkbox' checked name='access_control_permissions_check_`+uuid+`' value='update'>Update</input>
+							  <input type='checkbox' checked name='access_control_permissions_check_`+uuid+`' value='delete'>Delete</input>
+							  <input type='checkbox' checked name='access_control_permissions_check_`+uuid+`' value='notify'>Notify</input>
+
+					  	</fieldset>
+					    </p>
+					    <p id='access_control_device_`+uuid+`'>
+					    	<select id='access_control_device_selector_`+uuid+`' multiple='multiple'>
+						</select>
+					    </p>
+					    <p id='access_control_`+uuid+`'>
+					    </p>
+					  </div>
+					  <div id="resources">
+					  <p id='resources_`+uuid+`'></p>
+					    <p></p>
+					  </div>
+					</div>`).tabs();
+				      device_tabs.css({'min-heght':'400px','overflow':'auto'}); 
+				      $(this).append(device_tabs);
+				      $('#credential_device_selector_'+uuid).multiSelect({  
+					      selectableHeader: "<div class='custom-header'>Available Devices</div>",
+					      selectionHeader: "<div class='custom-header'>Selected Devices</div>",
+				      });
+				      $('#access_control_device_selector_'+uuid).multiSelect({  
+					      selectableHeader: "<div class='custom-header'>Available Devices</div>",
+					      selectionHeader: "<div class='custom-header'>Subject Devices</div>",
+				      });
+				      		/*Credential Button*/
+					    var cred_button = document.createElement("div");
+						cred_button.setAttribute('id','credsbutton_'+uuid);
+						cred_button.setAttribute('onclick','addCredentials("'+uuid+'")');
+						cred_button.setAttribute('class','w3-button w3-green w3-round-large');
+						cred_button.innerHTML = "Add Credentials";
+						cred_button.setAttribute('style','margin:2px;float:right;font-size:20px;opacity:1');
+						$('#cred_'+uuid).append(cred_button);
+				      		
+				      		/*Access Control Button*/
+					    var access_control_button = document.createElement("div");
+						access_control_button.setAttribute('id','access_controlsbutton_'+uuid);
+						access_control_button.setAttribute('onclick','addACE("'+uuid+'")');
+						access_control_button.setAttribute('class','w3-button w3-green w3-round-large');
+						access_control_button.innerHTML = "Add ACE";
+						access_control_button.setAttribute('style','margin:2px;float:right;font-size:20px;opacity:1');
+						$('#access_control_'+uuid).append(access_control_button);
+
+				      	/*Fill resources Tab*/
+				        
+			      },   
+			      open: function() {
+				/*Make background dark.  See page.css*/
+				$('.ui-widget-overlay').addClass('custom-overlay');
+			      },
+				buttons: {
+				  Close: function() {
+				    $( this ).dialog( "close" );
+				  }
+				}
+			      });  //end confirm dialog
+
+	      card.append(label);
+	      card.append(imageContainer);
+	      }///////////////End Owned State
+	      return card;
+      }
+
+	
+
+      function addDevice(parentId, device) {
+	    // Adds an element to the document
+	    var p = document.getElementById(parentId);
+	    p.append(device);
+	    $(device).show("bounce",{times:2,distance:10},900);
+	}
+
+	function removeDevice(uuid) {
+	    // Removes an element from the document
+	    //try{
+		    var element = document.getElementById(uuid);
+		    //element.hide("bounce",{times:2,distance:10},900);
+		    //$('#'+uuid).hide("puff").delay(10).queue(function(){$(this).remove();});
+		$('#'+uuid).hide("drop",{direction:"down"}).delay(10).queue(function(){$(this).remove();});
+	    //}catch{
+		//pass
+	    //}
+	}
+
+	/*Handle command from basic client*/
+	function send_command(obj){
+		var obj_array = obj.id.split('_');
+		uuid = obj_array[1];
+		state = obj.checked
+		if (state==true){
+			state=1;
+		}else{
+			state=0;
+		}
+		console.log(uuid,state);
+		socket.emit("send_command",uuid,state);
+	}
+
+
+	/*Socket setup*/
+	//var socket = io.connect('http://' + document.domain +  ':' + location.port);
+	/*Secure Socket*/
+	var socket = io.connect('https://' + document.domain +  ':' + location.port);
+
+	/*OBT is up and running*/
+     socket.on( 'obt_initialized', function( msg ) {
+        console.log( msg )
+      })
+
+
+
+	/*Return of All discovered devices*/
+     socket.on( 'device_discovery', function( msg ) {
+	var discovery = JSON.parse(msg);
+	console.log(discovery);
+	for (var key in discovery) {
+	    if (discovery.hasOwnProperty(key)) {
+		var name = discovery[key].name;
+		var uuid = discovery[key].uuid;
+		    /*Owned Devices*/
+		    if (discovery[key].owned_state){
+			    if (!owned_devices_stack.includes(discovery[key].uuid)){
+				newDevice = buildDevice(discovery[key].uuid,"owned",name);
+				addDevice('owned_devices',newDevice);
+				owned_devices_stack.push(discovery[key].uuid);
+				console.log("Owned Devices: "+owned_devices_stack);
+			    }
+		    }else //Unowned devices
+		    {
+			    if (!unowned_devices_stack.includes(discovery[key].uuid)){
+				newDevice = buildDevice(discovery[key].uuid,"unowned",name);
+				addDevice('unowned_devices',newDevice);
+				unowned_devices_stack.push(discovery[key].uuid);
+				console.log("Unowned Devices: "+unowned_devices_stack);
+			    }
+		    }
+	       update_ui_devices();
+	    }
+	}
+	  hideWait('button_discover');
+      })
+     
+	socket.on( 'resource_discovery', function( msg ) {
+		var resources = JSON.parse(msg);
+		console.log(resources);
+		for (var uuid in resources){
+			console.log(uuid);
+			var resource_html ="";
+			for (var i=0; i<resources[uuid].length;i++){
+			        resource_html = resource_html+"<p>"+resources[uuid][i].uri+"</p>";
+				/*Fill Resource Selector in Access Control Tab*/
+				$("#access_control_resource_selector_"+uuid).append(new Option(resources[uuid][i].uri,resources[uuid][i].uri));
+				/*Fill Resources Tab*/
+				$("#resources_"+uuid).html(resource_html);
+
+			}
+		}
+		//resources_array.push(resources);
+	})
+
+	/*Loops through selected devices in credential selector
+	sends these uuids and the source uuid to webserver/obt*/
+	function addCredentials(source_device)
+	{
+		var values = $("#credential_device_selector_"+source_device).val();
+		console.log("Provisioning Credentials\n"+values);
+		var credentials = new Object();
+		credentials.source_device = source_device;
+		credentials.type = "pairwise";
+		credentials.target_devices = values;
+		socket.emit("provision_credentials",JSON.stringify(credentials));
+	}
+	
+	/*Loops through selected devices in permissions credential selector
+	sends these uuids and the source uuid to webserver/obt*/
+	function addACE(target_device)
+	{
+		var crudn = [];
+		$("input:checkbox[name=access_control_permissions_check_"+target_device+"]:checked").each(function() {
+		  crudn.push($(this).val());
+		});
+		var subject_devices = $("#access_control_device_selector_"+target_device).val();
+		var href = $("#access_control_resource_selector_"+target_device).val();
+		console.log("Provisioning ACE\n"+"Target: "+target_device+" Subjects: "+subject_devices );
+		console.log("href: "+href+" CRUDN: "+crudn);
+		var ace = new Object();
+		ace.target_device = target_device;
+		ace.subjects = subject_devices;
+		ace.crudn = crudn;
+		ace.href = href;
+		socket.emit("provision_ace",JSON.stringify(ace));
+	}
+
+	function update_ui_devices(){
+		console.log("Remove Unowned Devices\n" + unowned_delete_stack);
+		for (var d=0;d<unowned_delete_stack.length;d++){
+			console.log("Remove device\n "+ unowned_delete_stack[d]);
+			removeDevice(unowned_delete_stack[d]);
+		}
+		for (var d=0;d<owned_delete_stack.length;d++){
+			console.log("Remove device\n "+ owned_delete_stack[d]);
+			removeDevice(owned_delete_stack[d]);
+		}
+	    	/*Update Access Control Tab*/
+	        if(owned_devices_stack.length >1){
+	        	for (var index =0; index<owned_devices_stack.length;index++)
+		      	{
+			      var current_uuid = owned_devices_stack[index];
+			      for (var index2 =0; index2<owned_devices_stack.length;index2++)
+	    		      {
+				      var other_uuid = owned_devices_stack[index2];
+	    			      if (current_uuid != other_uuid)
+	    				{
+					      $('#access_control_device_selector_'+current_uuid).multiSelect('addOption', { value: other_uuid, text: other_uuid });
+					      $('#credential_device_selector_'+current_uuid).multiSelect('addOption', { value: other_uuid, text: other_uuid });
+	    				}
+	    		       }
+	        	}
+	    	}
+	}
+
+	function discoverResources(uuid){
+		console.log("Discover Resources:\n"+uuid);
+		socket.emit("discover_resources",uuid);
+        }
+
+	/*Button callbacks*/
+
+	function onboardDevice(uuid){
+		console.log("Perform Ownership of UUID:\n"+uuid);
+		//keep track of owned uuid for later deletion from unowned 
+		unowned_delete_stack.push(uuid); 
+		showWait('statusbutton_'+uuid);
+		socket.emit("onboard_device",uuid);
+		discover_devices();
+	}
+	
+	function offboardDevice(uuid){
+		console.log("Perform Reset of UUID:\n"+uuid);
+		//keep track of owned uuid for later deletion from owned 
+		owned_delete_stack.push(uuid); 
+		showWait('statusbutton_'+uuid);
+		socket.emit("offboard_device",uuid);
+		discover_devices();
+	}
+
+
+	function discover_owned(){
+		console.log( 'Get owned Devices' )
+		socket.emit("discover_owned","data");
+	}
+
+	function discover_unowned(){
+		console.log( 'Get Unowned Devices' )
+		socket.emit("discover_unowned","data");
+	}
+	function discover_devices(){
+		console.log( 'Discover  Devices' )
+		showWait('button_discover');
+		socket.emit("discover_devices","data");
+	}
+
+	// This is for testing UI
+	//newDevice = buildDevice('bf5a6a4f-e94d-4df6-61ed-0178af45b135',"unowned");
+	//addDevice('unowned_devices',newDevice);
+
+	//newDevice = buildDevice('bf5a6a4f-e94d-4df6-61ed-0178af45b136',"owned");
+	//addDevice('owned_devices',newDevice);
+
+
+
+    </script>
+</section>
+<footer>
+  <p>Cablelabs/SCTE Demo</p>
+</footer>
+	  </div>
+  </body>
+  </html>

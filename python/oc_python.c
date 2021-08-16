@@ -21,6 +21,7 @@
 #include "oc_obt.h"
 #include "port/oc_clock.h"
 #include "security/oc_obt_internal.h"
+#include "oc_streamlined_onboarding.h"
 #include <unistd.h>
 #if defined(_WIN32)
 #include <windows.h>
@@ -2732,6 +2733,61 @@ void test_print(void)
 {
 	PRINT("[C] test_print\n");
 }
+
+#ifdef OC_SO
+static void
+so_otm_cb(oc_uuid_t *uuid, int status, void *data)
+{
+  (void)data;
+  char di[37];
+  oc_uuid_to_str(uuid, di, 37);
+
+  if (status >= 0) {
+    PRINT("\nSuccessfully performed OTM on device with UUID %s\n", di);
+    // oc_list_add(owned_devices, device);
+  } else {
+    // oc_memb_free(&device_handles, device);
+    PRINT("\nERROR performing ownership transfer on device %s\n", di);
+  }
+}
+static void
+streamlined_onboarding_discovery_cb(oc_uuid_t *uuid, oc_endpoint_t *eps, void *data)
+{
+  (void)eps;
+  char di[OC_UUID_LEN];
+  oc_uuid_to_str(uuid, di, OC_UUID_LEN);
+  PRINT("Discovered device with uuid %s\n", di);
+  if (data == NULL) {
+    return;
+  }
+  // TODO: This should first prompt for user confirmation before onboarding
+
+  int ret = oc_obt_perform_streamlined_otm(uuid, (const unsigned char *)data, strlen(data), so_otm_cb, NULL);
+  if (ret >= 0) {
+    PRINT("Successfully issued request to perform Streamlined Onboarding OTM\n");
+  }
+}
+
+static void
+perform_streamlined_discovery(oc_so_info_t *so_info)
+{
+  while (so_info != NULL) {
+    char *cred = calloc(OC_SO_MAX_CRED_LEN, 1);
+    PRINT("Onboarding device with UUID %s and cred %s\n", so_info->uuid, so_info->cred);
+    memcpy(cred, so_info->cred, strlen(so_info->cred));
+
+    struct timespec onboarding_wait = { .tv_sec = 5, .tv_nsec = 0 };
+    OC_DBG("Sleeping for %d seconds before onboarding", onboarding_wait.tv_sec);
+    nanosleep(&onboarding_wait, &onboarding_wait);
+
+    oc_obt_discover_unowned_devices(streamlined_onboarding_discovery_cb, so_info->uuid, cred);
+    so_info = so_info->next;
+  }
+  oc_so_info_free(so_info);
+}
+
+#endif /* OC_SO */
+
 
 
 int

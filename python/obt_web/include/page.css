@@ -159,7 +159,7 @@ padding:2px;margin:5px;position:relative;border:2px solid white;
   position: relative;
   display: inline-block;
   width: 60px;
-  height: 34px;
+  height: 40px;
 }
 
 .switch input { 
@@ -208,7 +208,7 @@ input:checked + .slider:before {
 
 /* Rounded sliders */
 .slider.round {
-  border-radius: 34px;
+  border-radius: 30px;
 }
 
 .slider.round:before {
@@ -255,5 +255,8 @@ input:checked + .slider:before {
   cursor: pointer; /* Cursor on hover */
 }
 
+.controls *{
+	display:inline-block;
+}
 
 

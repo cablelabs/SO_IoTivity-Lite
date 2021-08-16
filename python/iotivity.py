@@ -725,6 +725,11 @@ class Iotivity():
         print("OWNED DEVICE ARRAY {}",self.device_array)
         return self.device_array
 
+    def discover_diplomats(self):
+        print(colored(20*" "+"Discover Diplomats"+20*" ",'yellow',attrs=['underline']))
+        ret = self.lib.py_discover_diplomat_for_observe();
+        return ret
+
         
     def quit(self):
         self.lib.python_exit(c_int(0))

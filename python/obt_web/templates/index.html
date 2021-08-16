@@ -47,7 +47,9 @@ var dialog;
     $( "#qr-button" ).button().on( "click", function() {
       dialog.dialog( "open" );
     });
-}); /*====================End Jquery=======================*/
+}); 
+
+/*====================End Jquery=======================*/
 
       var imagePath = 'include/images/';
 
@@ -113,9 +115,16 @@ function deviceButtonMouseOver(uuid,text)
   </script>
 </header>
 <section>
-	<button id='button_discover' type="button" class="w3-button w3-round-large w3-light-blue nav-button" onclick="discover_devices()">Discover Devices </button>
-	<!--<button id='qr-button' type="button" class="w3-button w3-round-large w3-light-blue nav-button" onclick="toggle_qr()">Show QR Scanner </button>-->
-	<button id='qr-button' type="button" class="w3-button w3-round-large w3-light-blue nav-button" >Show QR Scanner </button>
+	<div class='controls' id='controls'>
+		<button id='button_discover' type="button" class="w3-button w3-round-large w3-light-blue nav-button" onclick="discover_devices()">Discover Devices </button>
+		<!--<button id='qr-button' type="button" class="w3-button w3-round-large w3-light-blue nav-button" onclick="toggle_qr()">Show QR Scanner </button>-->
+		<button id='qr-button' type="button" class="w3-button w3-round-large w3-light-blue nav-button" >Show QR Scanner </button>
+		<p>streamlined Onboarding</p>
+		  <label class="switch">
+		  <input type="checkbox" id='switch_so' onchange=observe_diplomat(this)>
+		  <span class="slider round"></span>
+		</label>
+	</div>
     <script src="include/html5-qrcode.min.js"></script>
         <div id="qr-container">
 		<div id="qr-reader" style="width:500px"></div>
@@ -128,6 +137,7 @@ function deviceButtonMouseOver(uuid,text)
   <div class="content" id="owned_devices" style="max-height:100%">
   </div>
     
+
   
 <script>
 
@@ -448,6 +458,13 @@ for (i = 0; i < coll.length; i++) {
 	    //}catch{
 		//pass
 	    //}
+	}
+
+	/*Turn on SO...Obeserve DPP*/
+	function observe_diplomat(obj){
+		observer_state = obj.checked;
+		console.log(observer_state);
+		socket.emit("observe_diplomat",observer_state);
 	}
 
 	/*Handle command from basic client*/

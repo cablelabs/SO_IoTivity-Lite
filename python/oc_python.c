@@ -37,7 +37,7 @@
 #define MAX_NUM_DEVICES (50)
 #define MAX_NUM_RESOURCES (100)
 #define MAX_NUM_RT (50)
-
+#define MAX_URI_LENGTH (30)
 
 /* Structure in app to track currently discovered owned/unowned devices */
 typedef struct device_handle_t
@@ -53,6 +53,12 @@ OC_MEMB(device_handles, device_handle_t, MAX_OWNED_DEVICES);
 OC_LIST(owned_devices);
 /* List of known un-owned devices */
 OC_LIST(unowned_devices);
+
+/* Diplomat resource information */
+static char diplomat_uri[MAX_URI_LENGTH];
+static oc_endpoint_t *diplomat_ep;
+
+
 
 #if defined(_WIN32)
 static HANDLE event_thread;
@@ -2735,6 +2741,8 @@ void test_print(void)
 }
 
 #ifdef OC_SO
+
+/*
 static void
 so_otm_cb(oc_uuid_t *uuid, int status, void *data)
 {
@@ -2750,6 +2758,8 @@ so_otm_cb(oc_uuid_t *uuid, int status, void *data)
     PRINT("\nERROR performing ownership transfer on device %s\n", di);
   }
 }
+*/
+/*
 static void
 streamlined_onboarding_discovery_cb(oc_uuid_t *uuid, oc_endpoint_t *eps, void *data)
 {
@@ -2767,7 +2777,8 @@ streamlined_onboarding_discovery_cb(oc_uuid_t *uuid, oc_endpoint_t *eps, void *d
     PRINT("Successfully issued request to perform Streamlined Onboarding OTM\n");
   }
 }
-
+*/
+/*
 static void
 perform_streamlined_discovery(oc_so_info_t *so_info)
 {
@@ -2785,7 +2796,90 @@ perform_streamlined_discovery(oc_so_info_t *so_info)
   }
   oc_so_info_free(so_info);
 }
+*/
+/*
+static void
+observe_diplomat(oc_client_response_t *data)
+{
+  PRINT("Observe Diplomat:\n");
+  if (data->code > 4) {
+    PRINT("Observe GET failed with code %d\n", data->code);
+    return;
+  }
+  oc_rep_t *rep = data->payload;
+  oc_rep_t *so_info_rep_array = NULL;
+  while (rep != NULL) {
+    OC_DBG("key %s", oc_string(rep->name));
+    switch (rep->type) {
+    case OC_REP_OBJECT_ARRAY:
+      if (oc_rep_get_object_array(rep, "soinfo", &so_info_rep_array)) {
+        oc_so_info_t *so_info = oc_so_parse_rep_array(so_info_rep_array);
+        perform_streamlined_discovery(so_info);
+      }
+      break;
+    default:
+      break;
+    }
+    rep = rep->next;
+  }
+}
+*/
 
+static oc_discovery_flags_t
+diplomat_discovery(const char *anchor, const char *uri, oc_string_array_t types,
+          oc_interface_mask_t iface_mask, oc_endpoint_t *endpoint,
+          oc_resource_properties_t bm, void *user_data)
+{
+  PRINT("[C] Diplomat discovery requested\n");	
+  (void)anchor;
+  (void)iface_mask;
+  (void)bm;
+  (void)user_data;
+  int uri_len = strlen(uri);
+  uri_len = (uri_len >= MAX_URI_LENGTH) ? MAX_URI_LENGTH - 1 : uri_len;
+
+  for (int i = 0; i < (int)oc_string_array_get_allocated_size(types); i++) {
+    char *t = oc_string_array_get_item(types, i);
+    if (strlen(t) == 14 && strncmp(t, "oic.r.diplomat", 14) == 0) {
+      oc_endpoint_list_copy(&diplomat_ep, endpoint);
+      strncpy(diplomat_uri, uri, uri_len);
+      diplomat_uri[uri_len] = '\0';
+
+      PRINT("Resource %s hosted at endpoints:\n", diplomat_uri);
+      oc_endpoint_t *ep = endpoint;
+      while (ep != NULL) {
+        PRINTipaddr(*ep);
+        PRINT("\n");
+        ep = ep->next;
+      }
+      signal_event_loop();
+      //oc_do_observe(diplomat_uri, diplomat_ep, NULL, &observe_diplomat, HIGH_QOS, NULL);
+      //PRINT("Sent OBSERVE request\n");
+      return OC_STOP_DISCOVERY;
+    }
+  }
+  return OC_CONTINUE_DISCOVERY;
+}
+
+static void
+discover_diplomat_for_observe(void)
+{
+  otb_mutex_lock(app_sync_lock);
+  if (!oc_do_ip_discovery("oic.r.diplomat", &diplomat_discovery, NULL)) {
+    PRINT("Failed to discover diplomat Devices\n");
+  }
+  otb_mutex_unlock(app_sync_lock);
+}
+
+
+
+void
+py_discover_diplomat_for_observe(void)
+{
+  otb_mutex_lock(app_sync_lock);
+  oc_do_ip_discovery("oic.r.diplomat", &diplomat_discovery, NULL); 
+  otb_mutex_unlock(app_sync_lock);
+}
 #endif /* OC_SO */
 
 
@@ -2964,6 +3058,12 @@ python_main(void)
     set_cloud_trust_anchor();
     break;
 #endif 
+#ifdef OC_SO
+  case 41:
+    discover_diplomat_for_observe();
+    break;
+#endif /* OC_SO */
+
 #ifdef OC_PKI
     case 96:
       install_trust_anchor();

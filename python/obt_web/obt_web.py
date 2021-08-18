@@ -102,6 +102,14 @@ def send_command(uuid,command):
     #print("Device:{},Command:{}".format(uuid,command))
     ret = my_iotivity.client_command(uuid,command)
 
+@socketio.on('get_obt_uuid')
+def get_obt_uuid():
+    uuid = my_iotivity.get_obt_uuid()
+    print(uuid)
+    socketio.emit('obt_uuid',to_json({"uuid":uuid}))
+
+
+
 #@socketio.event
 #def connect():
 #    global thread
@@ -114,8 +122,6 @@ if __name__ == '__main__':
     debug = ['resources']
     my_iotivity = Iotivity(debug=debug)
     signal.signal(signal.SIGINT, my_iotivity.sig_handler)
-    socketio.emit('obt_initialized','True')
-    time.sleep(5)
     #Insecure
     #socketio.run(app, host='0.0.0.0',debug=True,use_reloader=False)
     #run in seperate thread

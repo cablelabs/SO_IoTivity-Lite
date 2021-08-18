@@ -17,7 +17,8 @@
   <body>
 	  <div class='wrapper'>
 <header>
-	<img src="include/images/ocf-logo.png" style="float:left;max-width:50%">
+	<img src="include/images/ocf-logo.png" >
+	<div id="obt_uuid" class="uuid-text"></div>
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script src="include/jquery-ui.min.js"></script>
@@ -51,14 +52,16 @@ var dialog;
 
 /*====================End Jquery=======================*/
 
-      var imagePath = 'include/images/';
 
+
+/*===================GLobals============================*/
+      var imagePath = 'include/images/';
       var unowned_devices_stack = []; 
       var owned_devices_stack = []; 
       var unowned_delete_stack = [];
       var owned_delete_stack = [];
-
       var resources_array = [];
+      var obt_uuid="";
 
 
 function openDeviceDialog(device)
@@ -351,7 +354,7 @@ for (i = 0; i < coll.length; i++) {
 					  </div>
 					  <div id="credentials">
 					    <p>Credential Type:
-						<select id='crewdential_selector_`+uuid+`'>
+						<select id='credential_selector_`+uuid+`'>
 					  		<option disabled selected> Choose a credential type</option>
 					  		<option value='pairwise'>Pairwise</option>
 					  		<option value='role'>Role</option>
@@ -401,6 +404,7 @@ for (i = 0; i < coll.length; i++) {
 					      selectableHeader: "<div class='custom-header'>Available Devices</div>",
 					      selectionHeader: "<div class='custom-header'>Subject Devices</div>",
 				      });
+				       $('#access_control_device_selector_'+uuid).multiSelect('addOption', { value: obt_uuid, text: "OBT" });
 				      		/*Credential Button*/
 					    var cred_button = document.createElement("div");
 						cred_button.setAttribute('id','credsbutton_'+uuid);
@@ -486,13 +490,14 @@ for (i = 0; i < coll.length; i++) {
 	//var socket = io.connect('http://' + document.domain +  ':' + location.port);
 	/*Secure Socket*/
 	var socket = io.connect('https://' + document.domain +  ':' + location.port);
+	socket.emit("get_obt_uuid");
 
-	/*OBT is up and running*/
-     socket.on( 'obt_initialized', function( msg ) {
-        console.log( msg )
+
+     socket.on('obt_uuid',(obj) => {
+	     var obt = JSON.parse(obj);
+	     obt_uuid = obt['uuid'];
+	     $("#obt_uuid").html("OBT UUID: "+obt_uuid);
       })
-
-
 
 	/*Return of All discovered devices*/
      socket.on( 'device_discovery', function( msg ) {

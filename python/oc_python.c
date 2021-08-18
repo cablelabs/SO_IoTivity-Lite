@@ -90,6 +90,7 @@ static int quit = 0;
 *
 */
 typedef void (*changedCB) (char* uuid, char* state, char* event);
+typedef void (*diplomatCB) (char* anchor, char* uri, char* state, char* event);
 typedef void (*resourceCB) (char* anchor, char* uri, char* types, char* interfaces);
 
 /**
@@ -99,6 +100,7 @@ typedef void (*resourceCB) (char* anchor, char* uri, char* types, char* interfac
 struct py_cb_struct
 {
     changedCB changedFCB;
+    diplomatCB diplomatFCB;
     resourceCB resourceFCB;
 };
 
@@ -115,6 +117,15 @@ struct py_cb_struct my_CBFunctions;
 void install_changedCB(changedCB changedCB) {
    PRINT("[C]install_changedCB\n");
    my_CBFunctions.changedFCB = changedCB;
+}
+
+/**
+* function to install diplomat callbacks, called from python
+*
+*/
+void install_diplomatCB(diplomatCB diplomatCB) {
+   PRINT("[C]install_diplomatCB\n");
+   my_CBFunctions.diplomatFCB = diplomatCB;
 }
 
 /**
@@ -146,6 +157,17 @@ void inform_resource_python(const char* anchor, const char* uri, const char* typ
   }
 }
 
+/**
+* function to call the callback for diplomats to python.
+*
+*/
+void inform_diplomat_python(const char* anchor, const char* uri, const char* state, const char* event)
+{
+  PRINT("[C]inform_python %p\n",my_CBFunctions.diplomatFCB);
+  if (my_CBFunctions.diplomatFCB != NULL) {
+    my_CBFunctions.diplomatFCB((char*)anchor,(char*)uri,(char*)state,(char*)event);
+  }
+}
 
 /**
 * function to print the returned cbor as JSON
@@ -2735,6 +2757,17 @@ display_device_uuid()
   PRINT("[C] OBT Started device with ID: %s\n", buffer);
 }
 
+char*
+py_get_obt_uuid()
+{
+  char buffer[OC_UUID_LEN];
+  oc_uuid_to_str(oc_core_get_device_id(0), buffer, sizeof(buffer));
+
+  char *uuid = malloc (sizeof (char) * OC_UUID_LEN);
+  strncpy(uuid,buffer,OC_UUID_LEN);
+  return uuid;
+}
+
 void test_print(void)
 {
 	PRINT("[C] test_print\n");
@@ -2797,9 +2830,8 @@ perform_streamlined_discovery(oc_so_info_t *so_info)
   oc_so_info_free(so_info);
 }
 */
-/*
 static void
-observe_diplomat(oc_client_response_t *data)
+observe_diplomat_cb(oc_client_response_t *data)
 {
   PRINT("Observe Diplomat:\n");
   if (data->code > 4) {
@@ -2813,8 +2845,9 @@ observe_diplomat(oc_client_response_t *data)
     switch (rep->type) {
     case OC_REP_OBJECT_ARRAY:
       if (oc_rep_get_object_array(rep, "soinfo", &so_info_rep_array)) {
-        oc_so_info_t *so_info = oc_so_parse_rep_array(so_info_rep_array);
-        perform_streamlined_discovery(so_info);
+        //oc_so_info_t *so_info = oc_so_parse_rep_array(so_info_rep_array);
+        //perform_streamlined_discovery(so_info);
+	break;
       }
       break;
     default:
@@ -2823,7 +2856,6 @@ observe_diplomat(oc_client_response_t *data)
     rep = rep->next;
   }
 }
-*/
 
 static oc_discovery_flags_t
 diplomat_discovery(const char *anchor, const char *uri, oc_string_array_t types,
@@ -2845,16 +2877,31 @@ diplomat_discovery(const char *anchor, const char *uri, oc_string_array_t types,
       strncpy(diplomat_uri, uri, uri_len);
       diplomat_uri[uri_len] = '\0';
 
-      PRINT("Resource %s hosted at endpoints:\n", diplomat_uri);
+    PRINT("Resource %s anchor: %s hosted at endpoints:\n", diplomat_uri,anchor);
+
+    char di[OC_UUID_LEN];
+    strncpy(di, anchor+6,OC_UUID_LEN);
+    oc_uuid_t uuid;
+    oc_str_to_uuid(di, &uuid);
+
+    bool owned = oc_obt_is_owned_device(&uuid);
+    char* state = "";
+    if (owned){
+	state="owned";
+    }else{
+	state="unowned";
+    }
+
+    inform_diplomat_python(anchor,diplomat_uri,state,NULL);
+
       oc_endpoint_t *ep = endpoint;
       while (ep != NULL) {
         PRINTipaddr(*ep);
         PRINT("\n");
         ep = ep->next;
       }
-      signal_event_loop();
-      //oc_do_observe(diplomat_uri, diplomat_ep, NULL, &observe_diplomat, HIGH_QOS, NULL);
-      //PRINT("Sent OBSERVE request\n");
+      oc_do_observe(diplomat_uri, diplomat_ep, NULL, &observe_diplomat_cb, HIGH_QOS, NULL);
+      PRINT("Sent OBSERVE request\n");
       return OC_STOP_DISCOVERY;
     }
   }
@@ -2870,7 +2917,6 @@ discover_diplomat_for_observe(void)
   }
   otb_mutex_unlock(app_sync_lock);
 }
-
 
 
 void

@@ -517,6 +517,7 @@ OC_DEVICE_HANDLE._fields_ = (
 
 
 CHANGED_CALLBACK = CFUNCTYPE(None, c_char_p, c_char_p)
+DIPLOMAT_CALLBACK = CFUNCTYPE(None, c_char_p, c_char_p, c_char_p,c_char_p)
 RESOURCE_CALLBACK = CFUNCTYPE(None, c_char_p, c_char_p, c_char_p, c_char_p)
 
 
@@ -549,6 +550,10 @@ class Iotivity():
             dev = Device(uuid,owned_state=True,name=name)
             self.device_array.append(dev)
             owned_event.set()
+    
+    def diplomatCB(self,anchor,uri,state,cb_event):
+        uuid = str(anchor)[8:-1]
+        print("Diplomat CB: UUID: {}, Uri:{} State:{}".format(uuid,uri,state))
     
     def resourceCB(self, anchor, uri, rtypes, myjson):
         uuid = str(anchor)[8:-1]
@@ -614,11 +619,15 @@ class Iotivity():
 
         self.resourceCB = RESOURCE_CALLBACK(self.resourceCB)
         self.lib.install_resourceCB(self.resourceCB)
+        
+        self.diplomatCB = DIPLOMAT_CALLBACK(self.diplomatCB)
+        self.lib.install_diplomatCB(self.diplomatCB)
 
         print ("...")
         self.threadid = threading.Thread(target=self.thread_function, args=())  
         self.threadid.start()
         print ("...")
+        #print(self.lib.display_device_uuid());
         
     def thread_function(self):
         """ starts the main function in C.
@@ -640,7 +649,7 @@ class Iotivity():
         ret = self.lib.oc_device_bind_resource_type(0, "oic.d.cms")
         print ("oc_device_bind_resource_type-cms-done", ret)
         print("oc_init_platform-done",ret)
-        self.lib.display_device_uuid();
+        #self.lib.display_device_uuid();
 
 
     def purge_device_array(self,uuid):
@@ -944,6 +953,12 @@ class Iotivity():
         print("get_idd ", myuuid)
         self.discover_resources(myuuid)
         time.sleep(3)
+
+    def get_obt_uuid(self):
+        self.lib.py_get_obt_uuid.restype = String
+        obt_uuid = self.lib.py_get_obt_uuid()
+        return str(obt_uuid)
+
         
         #resources = self.resourcelist.get(myuuid)
         print("get_idd ", self.resourcelist)

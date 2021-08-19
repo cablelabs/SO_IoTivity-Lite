@@ -122,11 +122,13 @@ function deviceButtonMouseOver(uuid,text)
 		<button id='button_discover' type="button" class="w3-button w3-round-large w3-light-blue nav-button" onclick="discover_devices()">Discover Devices </button>
 		<!--<button id='qr-button' type="button" class="w3-button w3-round-large w3-light-blue nav-button" onclick="toggle_qr()">Show QR Scanner </button>-->
 		<button id='qr-button' type="button" class="w3-button w3-round-large w3-light-blue nav-button" >Show QR Scanner </button>
-		<p>streamlined Onboarding</p>
-		  <label class="switch">
+		<div> 
+			<p > SO</p>
+		 <label class="switch">
 		  <input type="checkbox" id='switch_so' onchange=observe_diplomat(this)>
 		  <span class="slider round"></span>
 		</label>
+		</div>
 	</div>
     <script src="include/html5-qrcode.min.js"></script>
         <div id="qr-container">

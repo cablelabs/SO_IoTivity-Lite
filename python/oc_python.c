@@ -349,6 +349,27 @@ is_device_in_list(oc_uuid_t *uuid, oc_list_t list)
   return NULL;
 }
 
+static device_handle_t *
+get_obt_device(oc_uuid_t *uuid,const char *device_name)
+{
+     device_handle_t *device;
+    device = oc_memb_alloc(&device_handles);
+    if (!device) {
+      return false;
+    }
+    memcpy(device->uuid.id, uuid->id, 16);
+  if (device_name) {
+    size_t len = strlen(device_name);
+    len = (len > 63) ? 63 : len;
+    strncpy(device->device_name, device_name, len);
+    device->device_name[len] = '\0';
+  } else {
+    device->device_name[0] = '\0';
+  }
+
+  return device;
+}
+
 static bool
 add_device_to_list(oc_uuid_t *uuid, const char *device_name, oc_list_t list)
 {
@@ -1911,17 +1932,33 @@ void py_provision_ace2(char* target, char* subject, char* href, char* crudn )
   device_handle_t *device = py_getdevice_from_uuid(target, 1);
   device_handle_t *subject_device = py_getdevice_from_uuid(subject, 1);
 
+    /*check if subject is OBT device*/	  
+    oc_uuid_t *obt_uuid = oc_core_get_device_id(0);
+    char di[OC_UUID_LEN];
+    oc_uuid_to_str(obt_uuid, di, OC_UUID_LEN);
+    if(strncmp(di,subject,OC_UUID_LEN)==0){
+	subject_device = get_obt_device(obt_uuid,"OBT");
+	if (subject_device == NULL){
+		    PRINT("[C]py_provision_ace_access ERROR: Invalid OBT subject uuid\n");
+		    return;
+	  }
+     }
   
   if (device == NULL){
     PRINT("[C]py_provision_ace_access ERROR: Invalid uuid\n");
     return;
   }
   if (subject_device == NULL){
+	  
     PRINT("[C]py_provision_ace_access ERROR: Invalid subject uuid\n");
     return;
   }
   if (crudn[0] == '\0'){
     PRINT("[C]py_provision_ace_access ERROR: No CRUDN provided\n");
+    return;
+  }
+  if (href[0] == '\0'){
+    PRINT("[C]py_provision_ace_access ERROR: No resource href provided\n");
     return;
   }
   PRINT("[C] py_provision_ace: name = %s  href = %s",device->device_name,href,crudn);

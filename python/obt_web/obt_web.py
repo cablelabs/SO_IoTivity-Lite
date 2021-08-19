@@ -89,8 +89,13 @@ def handle_pairwise(data):
     print("Provision ACE:{}".format(data))
     ace = json.loads(data, object_hook=lambda d: SimpleNamespace(**d))
     crudn = "|".join(ace.crudn)
+    if ace.href is None:
+        href = ""
+    else:
+        href = ace.href
+    print(href)
     for subject in ace.subjects:
-        provision = my_iotivity.provision_ace(ace.target_device,subject,ace.href,crudn)
+        provision = my_iotivity.provision_ace(ace.target_device,str(subject),str(href),crudn)
 
 @socketio.on('observe_diplomat')
 def observe_diplomat(state):

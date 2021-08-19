@@ -531,7 +531,12 @@ class Device():
 
 
 class Iotivity():
-    # needs to be before _init_
+    """ ********************************
+    Call back handles general task like device 
+    discovery. 
+    needs to be before _init_
+    **********************************"""
+
     def changedCB(self,uuid,cb_event):
         name = ""
         if uuid != None:
@@ -551,10 +556,19 @@ class Iotivity():
             self.device_array.append(dev)
             owned_event.set()
     
+    """ ********************************
+    Call back handles streamlined onboarding tasks.
+    Dipomat discovery/state
+    Observes from diplomat
+    **********************************"""
     def diplomatCB(self,anchor,uri,state,cb_event):
         uuid = str(anchor)[8:-1]
-        print("Diplomat CB: UUID: {}, Uri:{} State:{}".format(uuid,uri,state))
+        print("Diplomat CB: UUID: {}, Uri:{} State:{}".format(uuid,uri,state,cb_event))
     
+    """ ********************************
+    Call back handles resource call backs tasks.
+    Resources is an dictionary with uuid of device
+    **********************************"""
     def resourceCB(self, anchor, uri, rtypes, myjson):
         uuid = str(anchor)[8:-1]
         uuid_new = copy.deepcopy(uuid)
@@ -564,13 +578,15 @@ class Iotivity():
         if len(my_uri) <=0:
             resource_event.set()
             print("ALL resources gathered");
-            print(self.resourcelist)
+            print("Resources: {}".format(self.resourcelist))
+            return
  
         print(colored("          Resource Event          \n",'green',attrs=['underline']))
         print(colored("UUID:{}, \nURI:{}",'green').format(uuid_new,my_uri))
         my_str = str(myjson)[2:-1]
         my_str = json.loads(my_str)
-
+        
+        duplicate_uri = False
 
         if self.resourcelist.get(uuid_new) is None:
             mylist = [ my_str ]
@@ -579,7 +595,12 @@ class Iotivity():
                 self.resourcelist[uuid_new] = mylist
         else:
             mylist = self.resourcelist[uuid_new]
-            mylist.append(my_str)
+            #Make sure to not add duplicate resources if second discovery
+            for resource in mylist:
+                if my_uri == resource['uri']:
+                    duplicate_uri=True
+            if not duplicate_uri:
+                mylist.append(my_str)
             #don't add duplicate rsources lists
             if uuid_new not in self.resourcelist:
                 self.resourcelist[uuid_new] = mylist
@@ -721,7 +742,7 @@ class Iotivity():
 
 
     def discover_owned(self):
-        print(colored(20*" "+"Discover Unowned Devices"+20*" ",'yellow',attrs=['underline']))
+        print(colored(20*" "+"Discover Owned Devices"+20*" ",'yellow',attrs=['underline']))
         #ret = self.lib.discover_owned_devices(c_int(0x02))
         #ret = self.lib.discover_owned_devices(c_int(0x03))
         ret = self.lib.discover_owned_devices(c_int(0x05))

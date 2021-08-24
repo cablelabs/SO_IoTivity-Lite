@@ -563,7 +563,7 @@ class Iotivity():
     **********************************"""
     def diplomatCB(self,anchor,uri,state,cb_event):
         uuid = str(anchor)[8:-1]
-        print("Diplomat CB: UUID: {}, Uri:{} State:{}".format(uuid,uri,state,cb_event))
+        print("Diplomat CB: UUID: {}, Uri:{} State:{} Event:{}".format(uuid,uri,state,cb_event))
     
     """ ********************************
     Call back handles resource call backs tasks.
@@ -578,7 +578,7 @@ class Iotivity():
         if len(my_uri) <=0:
             resource_event.set()
             print("ALL resources gathered");
-            print("Resources: {}".format(self.resourcelist))
+            print(colored("Resources {}",'yellow').format(self.resourcelist))
             return
  
         print(colored("          Resource Event          \n",'green',attrs=['underline']))

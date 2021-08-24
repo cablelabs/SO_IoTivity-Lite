@@ -2812,7 +2812,6 @@ void test_print(void)
 
 #ifdef OC_SO
 
-/*
 static void
 so_otm_cb(oc_uuid_t *uuid, int status, void *data)
 {
@@ -2828,8 +2827,6 @@ so_otm_cb(oc_uuid_t *uuid, int status, void *data)
     PRINT("\nERROR performing ownership transfer on device %s\n", di);
   }
 }
-*/
-/*
 static void
 streamlined_onboarding_discovery_cb(oc_uuid_t *uuid, oc_endpoint_t *eps, void *data)
 {
@@ -2847,8 +2844,6 @@ streamlined_onboarding_discovery_cb(oc_uuid_t *uuid, oc_endpoint_t *eps, void *d
     PRINT("Successfully issued request to perform Streamlined Onboarding OTM\n");
   }
 }
-*/
-/*
 static void
 perform_streamlined_discovery(oc_so_info_t *so_info)
 {
@@ -2858,7 +2853,7 @@ perform_streamlined_discovery(oc_so_info_t *so_info)
     memcpy(cred, so_info->cred, strlen(so_info->cred));
 
     struct timespec onboarding_wait = { .tv_sec = 5, .tv_nsec = 0 };
-    OC_DBG("Sleeping for %d seconds before onboarding", onboarding_wait.tv_sec);
+    PRINT("Sleeping for %d seconds before onboarding", onboarding_wait.tv_sec);
     nanosleep(&onboarding_wait, &onboarding_wait);
 
     oc_obt_discover_unowned_devices(streamlined_onboarding_discovery_cb, so_info->uuid, cred);
@@ -2866,24 +2861,32 @@ perform_streamlined_discovery(oc_so_info_t *so_info)
   }
   oc_so_info_free(so_info);
 }
-*/
 static void
 observe_diplomat_cb(oc_client_response_t *data)
 {
-  PRINT("Observe Diplomat:\n");
+  PRINT("Observe Diplomat: CODE %d\n",data->code);
   if (data->code > 4) {
     PRINT("Observe GET failed with code %d\n", data->code);
+    //char* c = (char *) data->code;
+    char code[20];
+    snprintf(code,sizeof(code),"%d",data->code);
+    inform_diplomat_python(NULL,NULL,NULL,code);
     return;
   }
   oc_rep_t *rep = data->payload;
   oc_rep_t *so_info_rep_array = NULL;
+  if(rep == NULL){
+	char* error = "ERROR:Obeserve Payload Response";
+        inform_diplomat_python(NULL,NULL,NULL,error);
+	return;
+  }
   while (rep != NULL) {
-    OC_DBG("key %s", oc_string(rep->name));
+    PRINT("key %s", oc_string(rep->name));
     switch (rep->type) {
     case OC_REP_OBJECT_ARRAY:
       if (oc_rep_get_object_array(rep, "soinfo", &so_info_rep_array)) {
-        //oc_so_info_t *so_info = oc_so_parse_rep_array(so_info_rep_array);
-        //perform_streamlined_discovery(so_info);
+        oc_so_info_t *so_info = oc_so_parse_rep_array(so_info_rep_array);
+        perform_streamlined_discovery(so_info);
 	break;
       }
       break;

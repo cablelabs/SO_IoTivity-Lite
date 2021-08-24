@@ -173,7 +173,7 @@ padding:2px;margin:5px;position:relative;border:2px solid white;
   position: relative;
   display: inline-block;
   width: 60px;
-  height: 40px;
+  height: 30px;
 }
 
 .switch input { 
@@ -272,5 +272,35 @@ input:checked + .slider:before {
 .controls *{
 	display:inline-block;
 }
+
+
+#menubar {
+  left: 0;
+  width: 100%;
+}
+
+/* Make jQuery UI Menu into a horizontal menubar with vertical dropdown */
+#menubar > li { /* Menubar buttons */
+  display: inline-block;
+}
+#menubar > li > ul > li { /* Menubar buttons inside dropdown */
+  display: block;
+}
+
+.ui-menu-item-wrapper{
+	min-height:40px;
+	text-align:center;
+}
+
+/* Change dropdown carets to correct direction */
+#menubar > li > div > span.ui-icon-caret-1-e {
+  /* Caret on menubar */
+  background:url(https://www.drupal.org/files/issues/ui-icons-222222-256x240.png) no-repeat -64px -16px !important;
+}
+#menubar ul li div span.ui-icon-caret-1-e {
+  /* Caret on dropdowns */
+  background:url(https://www.drupal.org/files/issues/ui-icons-222222-256x240.png) no-repeat -32px -16px !important;
+}
+
 
 

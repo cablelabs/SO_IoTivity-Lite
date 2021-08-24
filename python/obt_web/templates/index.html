@@ -4,6 +4,7 @@
     <title>OCF Onboarding Tool</title>
     <link rel="stylesheet" href="include/page.css">
     <link rel="stylesheet" href="include/css/multi-select.css">
+    <link rel="stylesheet" href="include/css/jquery.toast.min.css">
     <link rel="stylesheet" href="include/jquery-ui.min.css">
     <link rel="apple-touch-icon" sizes="180x180" href="include/favicon/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="include/favicon/favicon-32x32.png">
@@ -23,9 +24,25 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script src="include/jquery-ui.min.js"></script>
     <script src="include/javascript/jquery.multi-select.js"></script>
+    <script src="include/javascript/jquery.toast.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.2/socket.io.js"></script>
       <script>
 /* Jquery Function*/
+$(document).ready(function() {
+  $('#menubar').menu();
+  
+  $('#menubar').menu({
+    position: { my: 'left top', at: 'left bottom' },
+    blur: function() {
+      $(this).menu('option', 'position', { my: 'left top', at: 'left bottom' });
+    },
+    focus: function(e, ui) {
+      if ($('#menubar').get(0) !== $(ui).get(0).item.parent().get(0)) {
+        $(this).menu('option', 'position', { my: 'left top', at: 'right top' });
+      }
+    },
+  });
+});
 var dialog;
       $( function(){
 	      /*QR Dialog*/
@@ -45,9 +62,9 @@ var dialog;
         }
       }
     });
-    $( "#qr-button" ).button().on( "click", function() {
-      dialog.dialog( "open" );
-    });
+    //$( "#qr-button" ).button().on( "click", function() {
+    //  dialog.dialog( "open" );
+    //});
 }); 
 
 /*====================End Jquery=======================*/
@@ -58,10 +75,17 @@ var dialog;
       var imagePath = 'include/images/';
       var unowned_devices_stack = []; 
       var owned_devices_stack = []; 
+      var owned_devices_dict = {}; 
       var unowned_delete_stack = [];
       var owned_delete_stack = [];
       var resources_array = [];
       var obt_uuid="";
+
+
+function showQR()
+{
+	$("#qr-container").dialog("open");
+}
 
 
 function openDeviceDialog(device)
@@ -119,16 +143,21 @@ function deviceButtonMouseOver(uuid,text)
 </header>
 <section>
 	<div class='controls' id='controls'>
-		<button id='button_discover' type="button" class="w3-button w3-round-large w3-light-blue nav-button" onclick="discover_devices()">Discover Devices </button>
-		<!--<button id='qr-button' type="button" class="w3-button w3-round-large w3-light-blue nav-button" onclick="toggle_qr()">Show QR Scanner </button>-->
-		<button id='qr-button' type="button" class="w3-button w3-round-large w3-light-blue nav-button" >Show QR Scanner </button>
-		<div> 
-			<p > SO</p>
-		 <label class="switch">
-		  <input type="checkbox" id='switch_so' onchange=observe_diplomat(this)>
-		  <span class="slider round"></span>
-		</label>
-		</div>
+<ul id="menubar">
+  <li><div id="button_discover" onclick="discover_devices()">Discover Devices</div></li>
+  <li> <div id="qr-button" onclick="showQR()">Show QR Scanner</div> </li>
+  <li>
+	<div> 
+		<!--<label class="switch">-->
+		<label for="switch_so"> Streamlined Onboarding
+	  <input type="checkbox" id='switch_so' onchange=observe_diplomat(this)>
+	  <!--<span class="slider round"></span>-->
+	</label>
+	</div>
+  </li>
+  <li><div>Help</div></li>
+  <li><div>About</div></li>
+</ul >
 	</div>
     <script src="include/html5-qrcode.min.js"></script>
         <div id="qr-container">
@@ -406,7 +435,7 @@ for (i = 0; i < coll.length; i++) {
 					      selectableHeader: "<div class='custom-header'>Available Devices</div>",
 					      selectionHeader: "<div class='custom-header'>Subject Devices</div>",
 				      });
-				       $('#access_control_device_selector_'+uuid).multiSelect('addOption', { value: obt_uuid, text: "OBT" });
+				      $('#access_control_device_selector_'+uuid).multiSelect('addOption', { value: obt_uuid, text: "OBT: "+obt_uuid });
 				      		/*Credential Button*/
 					    var cred_button = document.createElement("div");
 						cred_button.setAttribute('id','credsbutton_'+uuid);
@@ -504,7 +533,7 @@ for (i = 0; i < coll.length; i++) {
 	/*Return of All discovered devices*/
      socket.on( 'device_discovery', function( msg ) {
 	var discovery = JSON.parse(msg);
-	console.log(discovery);
+	console.log("Discovery: "+discovery);
 	for (var key in discovery) {
 	    if (discovery.hasOwnProperty(key)) {
 		var name = discovery[key].name;
@@ -529,7 +558,9 @@ for (i = 0; i < coll.length; i++) {
 	       update_ui_devices();
 	    }
 	}
-	  hideWait('button_discover');
+	     if (discovery.length == 0){
+		  hideWait('button_discover');
+	     }
       })
      
 	socket.on( 'resource_discovery', function( msg ) {
@@ -548,6 +579,7 @@ for (i = 0; i < coll.length; i++) {
 			}
 		}
 		//resources_array.push(resources);
+	  hideWait('button_discover');
 	})
 
 	/*Loops through selected devices in credential selector

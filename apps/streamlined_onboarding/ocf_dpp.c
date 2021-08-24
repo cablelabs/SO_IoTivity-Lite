@@ -136,7 +136,7 @@ dpp_so_init(char *config_path)
   }
   ctrl = wpa_ctrl_open(ctrl_iface);
   if (ctrl == NULL) {
-    OC_ERR("Failed to open wpa_ctrl interface");
+    OC_ERR("Failed to open wpa_ctrl interface %s",ctrl);
     return -1;
   }
   OC_DBG("Opened wpa_ctrl interface");

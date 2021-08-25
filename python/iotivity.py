@@ -517,7 +517,7 @@ OC_DEVICE_HANDLE._fields_ = (
 
 
 CHANGED_CALLBACK = CFUNCTYPE(None, c_char_p, c_char_p)
-DIPLOMAT_CALLBACK = CFUNCTYPE(None, c_char_p, c_char_p, c_char_p,c_char_p)
+DIPLOMAT_CALLBACK = CFUNCTYPE(None, c_char_p, c_char_p, c_char_p,c_char_p,c_char_p,c_char_p)
 RESOURCE_CALLBACK = CFUNCTYPE(None, c_char_p, c_char_p, c_char_p, c_char_p)
 
 
@@ -528,7 +528,14 @@ class Device():
         self.owned_state = owned_state
         self.name = name 
 
+class Diplomat():
 
+    def __init__(self,uuid,owned_state=None,name="",observe_state=None,target_cred=None):
+        self.uuid=uuid
+        self.owned_state = owned_state
+        self.name = name
+        self.observe_state = observe_state
+        self.targer_cred = {}
 
 class Iotivity():
     """ ********************************
@@ -561,9 +568,11 @@ class Iotivity():
     Dipomat discovery/state
     Observes from diplomat
     **********************************"""
-    def diplomatCB(self,anchor,uri,state,cb_event):
+    def diplomatCB(self,anchor,uri,state,cb_event,target,target_cred):
         uuid = str(anchor)[8:-1]
-        print("Diplomat CB: UUID: {}, Uri:{} State:{} Event:{}".format(uuid,uri,state,cb_event))
+        if len(uuid):
+            diplomat = Diplomat(uuid)
+        print("Diplomat CB: UUID: {}, Uri:{} State:{} Event:{} Target:{} Target Cred:{}".format(uuid,uri,state,cb_event,target,target_cred))
     
     """ ********************************
     Call back handles resource call backs tasks.

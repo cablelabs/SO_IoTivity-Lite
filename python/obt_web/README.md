@@ -12,6 +12,9 @@ source bin/activate
 
 
 # Install pre-requisites
+**_NOTE_** for running the web page in secure mode
+On raspberry PI (needed by numpy)
+sudo apt install libatlas3-base
 
 pip install -r requirements.txt
 

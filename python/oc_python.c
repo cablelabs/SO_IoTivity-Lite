@@ -90,7 +90,7 @@ static int quit = 0;
 *
 */
 typedef void (*changedCB) (char* uuid, char* state, char* event);
-typedef void (*diplomatCB) (char* anchor, char* uri, char* state, char* event);
+typedef void (*diplomatCB) (char* anchor, char* uri, char* state, char* event, char* target, char* target_cred);
 typedef void (*resourceCB) (char* anchor, char* uri, char* types, char* interfaces);
 
 /**
@@ -161,11 +161,11 @@ void inform_resource_python(const char* anchor, const char* uri, const char* typ
 * function to call the callback for diplomats to python.
 *
 */
-void inform_diplomat_python(const char* anchor, const char* uri, const char* state, const char* event)
+void inform_diplomat_python(const char* anchor, const char* uri, const char* state, const char* event, const char* target, const char* target_cred)
 {
   PRINT("[C]inform_python %p\n",my_CBFunctions.diplomatFCB);
   if (my_CBFunctions.diplomatFCB != NULL) {
-    my_CBFunctions.diplomatFCB((char*)anchor,(char*)uri,(char*)state,(char*)event);
+    my_CBFunctions.diplomatFCB((char*)anchor,(char*)uri,(char*)state,(char*)event,(char*)target,(char*)target_cred);
   }
 }
 
@@ -2870,14 +2870,14 @@ observe_diplomat_cb(oc_client_response_t *data)
     //char* c = (char *) data->code;
     char code[20];
     snprintf(code,sizeof(code),"%d",data->code);
-    inform_diplomat_python(NULL,NULL,NULL,code);
+    inform_diplomat_python("","","",code,"","");
     return;
   }
   oc_rep_t *rep = data->payload;
   oc_rep_t *so_info_rep_array = NULL;
   if(rep == NULL){
 	char* error = "ERROR:Obeserve Payload Response";
-        inform_diplomat_python(NULL,NULL,NULL,error);
+        inform_diplomat_python("","","",error,"","");
 	return;
   }
   while (rep != NULL) {
@@ -2886,11 +2886,16 @@ observe_diplomat_cb(oc_client_response_t *data)
     case OC_REP_OBJECT_ARRAY:
       if (oc_rep_get_object_array(rep, "soinfo", &so_info_rep_array)) {
         oc_so_info_t *so_info = oc_so_parse_rep_array(so_info_rep_array);
+        PRINT("Onboarding device with UUID %s and cred %s\n", so_info->uuid, so_info->cred);
+	char target_uuid[OC_UUID_LEN];
+        snprintf(target_uuid,sizeof(target_uuid),"%s",so_info->uuid);
+	inform_diplomat_python("","","","",target_uuid,"");
         perform_streamlined_discovery(so_info);
 	break;
       }
       break;
     default:
+      PRINT("NOT an OC_REP\n");
       break;
     }
     rep = rep->next;
@@ -2932,7 +2937,7 @@ diplomat_discovery(const char *anchor, const char *uri, oc_string_array_t types,
 	state="unowned";
     }
 
-    inform_diplomat_python(anchor,diplomat_uri,state,NULL);
+    inform_diplomat_python(anchor,diplomat_uri,state,NULL,NULL,NULL);
 
       oc_endpoint_t *ep = endpoint;
       while (ep != NULL) {

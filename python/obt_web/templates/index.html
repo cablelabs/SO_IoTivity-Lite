@@ -25,6 +25,7 @@
     <script src="include/jquery-ui.min.js"></script>
     <script src="include/javascript/jquery.multi-select.js"></script>
     <script src="include/javascript/jquery.toast.min.js"></script>
+    <script src="include/javascript/ocf_resources.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.2/socket.io.js"></script>
       <script>
 /* Jquery Function*/
@@ -120,6 +121,9 @@ var about_dialog;
       var resources_array = [];
       var obt_uuid="";
       var diplomat;
+      let devices = [];
+      /*device object  {uuid:"uuid",name:"name",owned_state:"bool",oxms:oxm_array[],resources:resource_array[]*/
+/*===================GLobals============================*/
 
 
 function showQR()
@@ -279,9 +283,13 @@ for (i = 0; i < coll.length; i++) {
 </style>
     <script type="text/javascript">
       var imagePath = 'include/images/';
-      function buildDevice(uuid, ownedState,name){
-	        
-	    if (ownedState =='unowned'){
+      //function buildDevice(uuid, ownedState,name){
+      function buildDevice(device){
+	    var uuid = device.uuid;
+	    var ownedState = device.owned_state;
+	    var name = device.name
+	    console.log(device);
+	    if (ownedState == false){
 		var card = document.createElement("div");
 			card.setAttribute('id',uuid);
 			card.setAttribute('class','w3-card-4 w3-grey w3-round');
@@ -318,13 +326,13 @@ for (i = 0; i < coll.length; i++) {
 
 		    var statusContainer = document.createElement("div");
 			    statusContainer.setAttribute('class','w3-container w3-white');
-			    statusContainer.setAttribute('style','margin:2px;font-size:12px;padding:2px;width:98%;position:absolute;left:0;bottom:0;opacity:0.8');
+			    statusContainer.setAttribute('style','margin:2px;font-size:12px;padding:2px;width:98%;position:absolute;left:0;bottom:0;opacity:0.6');
 			    statusContainer.setAttribute('id','status_container_'+uuid)
 			    var statusTxt = document.createElement("div");
 				statusTxt.setAttribute('id','statusTxt_'+uuid);
 				statusTxt.setAttribute('style','margin:5px;float:left');
-		    		console.log("#statusTxt_"+uuid);
-				    statusTxt.innerHTML = "<b>"+capitalize(ownedState)+"<br> Device</b>";
+		    		//console.log("#statusTxt_"+uuid);
+				    //statusTxt.innerHTML = "<b>"+capitalize(ownedState)+"<br> Device</b>";
 			    statusContainer.append(statusTxt);
 	      		    var button = document.createElement("div");
 				button.setAttribute('id','statusbutton_'+uuid);
@@ -375,12 +383,12 @@ for (i = 0; i < coll.length; i++) {
 
 		    var statusContainer = document.createElement("div");
 			    statusContainer.setAttribute('class','w3-container w3-white');
-			    statusContainer.setAttribute('style','margin:2px;font-size:12px;padding:2px;width:98%;position:absolute;left:0;bottom:0;opacity:0.8');
+			    statusContainer.setAttribute('style','margin:2px;font-size:12px;padding:2px;width:98%;position:absolute;left:0;bottom:0;opacity:0.6');
 			    statusContainer.setAttribute('id','status_container_'+uuid)
 			    var statusTxt = document.createElement("div");
 				statusTxt.setAttribute('id','statusTxt_'+uuid);
 				statusTxt.setAttribute('style','margin:5px;float:left');
-				      statusTxt.innerHTML = "<b>"+capitalize(ownedState) +"<br> Device</b>";
+				      //statusTxt.innerHTML = "<b>"+capitalize(ownedState) +"<br> Device</b>";
 			    statusContainer.append(statusTxt);
 	      		    var button = document.createElement("div");
 				button.setAttribute('id','statusbutton_'+uuid);
@@ -548,6 +556,44 @@ for (i = 0; i < coll.length; i++) {
 	    //}
 	}
 
+	/*Device image based oic resource types*/
+	function updateDeviceImage(device,oic_device_types){
+		/*get resource types*/
+		type="";
+		for (index in oic_device_types){
+			for (type in oic_device_types[index].types){
+				device_type = oic_device_types[index].types[type]
+				if (images.includes(device_type)){
+					var device_image =imagePath+device_type+".png";
+					$("#image_"+device.uuid).attr("src",device_image);
+				}
+			}
+		}
+
+	}
+
+	/*Update Devcie client based on resourse*/
+	function updateDeviceClient(device,non_oic_resources)
+	{}
+
+	/*Update Device  based on returned resources*/
+	function updateDeviceResources(device){
+		var non_oic_resources = [];
+		var oic_device_types = [];
+		for (resource in device.resources){
+			/*Non OIC resources*/
+			if (!device.resources[resource].uri.includes("/oic") && !device.resources[resource].uri.includes("/oc")){
+				non_oic_resources.push(device.resources[resource]); 
+			}
+			if(device.resources[resource].uri.includes("/oic/d")){
+				oic_device_types.push(device.resources[resource]);
+				console.log("Type Resource",device.resources[resource]);
+			}
+		}
+		updateDeviceImage(device,oic_device_types);
+
+	}
+
 	/*Turn on SO...Obeserve DPP*/
 	function observe_diplomat(obj){
 		observer_state = obj.checked;
@@ -614,21 +660,24 @@ for (i = 0; i < coll.length; i++) {
 		var uuid = discovery[key].uuid;
 		    /*Owned Devices*/
 		    if (discovery[key].owned_state){
-			    if (!owned_devices_stack.includes(discovery[key].uuid)){
-				newDevice = buildDevice(discovery[key].uuid,"owned",name);
-				addDevice('owned_devices',newDevice);
-				owned_devices_stack.push(discovery[key].uuid);
-				console.log("Owned Devices: "+owned_devices_stack);
+			    if (!devices.filter(function(e) { return e.uuid === discovery[key].uuid; }).length > 0) {
+				    /*new device add to array*/
+				    devices.push(discovery[key]);
+				    owned_devices_stack.push(discovery[key].uuid);
+				    newDevice = buildDevice(discovery[key]);
+				    addDevice('owned_devices',newDevice);
 			    }
 		    }else //Unowned devices
 		    {
-			    if (!unowned_devices_stack.includes(discovery[key].uuid)){
-				newDevice = buildDevice(discovery[key].uuid,"unowned",name);
-				addDevice('unowned_devices',newDevice);
-				unowned_devices_stack.push(discovery[key].uuid);
-				console.log("Unowned Devices: "+unowned_devices_stack);
+			    if (!devices.filter(function(e) { return e.uuid === discovery[key].uuid; }).length > 0) {
+				    /*new device add to array*/
+				    devices.push(discovery[key]);
+				    unowned_devices_stack.push(discovery[key].uuid);
+				    newDevice = buildDevice(discovery[key]);
+				    addDevice('unowned_devices',newDevice);
 			    }
 		    }
+	       console.log(devices);
 	       update_ui_devices();
 	    }
 	}
@@ -639,20 +688,28 @@ for (i = 0; i < coll.length; i++) {
      
 	socket.on( 'resource_discovery', function( msg ) {
 		var resources = JSON.parse(msg);
-		console.log(resources);
 		for (var uuid in resources){
 			console.log(uuid);
+			var device = devices.find(x => x.uuid === uuid);
 			var resource_html ="";
 			for (var i=0; i<resources[uuid].length;i++){
-			        resource_html = resource_html+"<p>"+resources[uuid][i].uri+"</p>";
+				/*Add resources to device in devices array*/
+				device.resources=resources[uuid];
 				/*Fill Resource Selector in Access Control Tab*/
 				$("#access_control_resource_selector_"+uuid).append(new Option(resources[uuid][i].uri,resources[uuid][i].uri));
 				/*Fill Resources Tab*/
+			        resource_html = resource_html+"<p>"+resources[uuid][i].uri+"</p>";
 				$("#resources_"+uuid).html(resource_html);
 
 			}
+			/*Remove device, then add it back with new properties*/
+			devices = devices.filter(function( device ) {
+				return device.uuid !== uuid;
+			});
+			devices.push(device)
+			console.log("Post Resource Device Array", devices);
+			updateDeviceResources(device);
 		}
-		//resources_array.push(resources);
 	  hideWait('button_discover');
 	})
 
@@ -690,15 +747,24 @@ for (i = 0; i < coll.length; i++) {
 	}
 
 	function update_ui_devices(){
-		console.log("Remove Unowned Devices\n" + unowned_delete_stack);
 		for (var d=0;d<unowned_delete_stack.length;d++){
 			console.log("Remove device\n "+ unowned_delete_stack[d]);
 			removeDevice(unowned_delete_stack[d]);
+			/*Update Devices array and remove onboarded device*/
+			devices = devices.filter(function( device ) {
+				return device.uuid !== unowned_delete_stack[d];
+			});
 		}
 		for (var d=0;d<owned_delete_stack.length;d++){
 			console.log("Remove device\n "+ owned_delete_stack[d]);
 			removeDevice(owned_delete_stack[d]);
+			/*Update Devices array and remove offboarded device*/
+			devices = devices.filter(function( device ) {
+				return device.uuid !== owned_delete_stack[d];
+			});
 		}
+		console.log("Devices Array\n");
+		console.log(devices);
 	    	/*Update Access Control Tab*/
 	        if(owned_devices_stack.length >1){
 	        	for (var index =0; index<owned_devices_stack.length;index++)

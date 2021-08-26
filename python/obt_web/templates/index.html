@@ -45,7 +45,7 @@ $(document).ready(function() {
 });
 var dialog;
       $( function(){
-	      /*QR Dialog*/
+      /*QR Dialog*/
   dialog = $( "#qr-container" ).dialog({
       modal: true,
       autoOpen: false,
@@ -66,7 +66,46 @@ var dialog;
     //  dialog.dialog( "open" );
     //});
 }); 
-
+/*Help Dialog*/
+var help_dialog;
+      $( function(){
+  help_dialog = $( "#help_container" ).dialog({
+      modal: true,
+      autoOpen: false,
+      maxWidth:600,
+      maxHeight: 700,
+      width: 600,
+      height: 700,
+      open: function() {
+        $('.ui-widget-overlay').addClass('custom-overlay');
+      },   
+      buttons: {
+        Ok: function() {
+          $( this ).dialog( "close" );
+        }
+      }
+    });
+}); 
+/*About Dialog*/
+var about_dialog;
+      $( function(){
+  about_dialog = $( "#about_container" ).dialog({
+      modal: true,
+      autoOpen: false,
+      maxWidth:600,
+      maxHeight: 700,
+      width: 600,
+      height: 700,
+      open: function() {
+        $('.ui-widget-overlay').addClass('custom-overlay');
+      },   
+      buttons: {
+        Ok: function() {
+          $( this ).dialog( "close" );
+        }
+      }
+    });
+}); 
 /*====================End Jquery=======================*/
 
 
@@ -80,11 +119,20 @@ var dialog;
       var owned_delete_stack = [];
       var resources_array = [];
       var obt_uuid="";
+      var diplomat;
 
 
 function showQR()
 {
 	$("#qr-container").dialog("open");
+}
+function showHelp()
+{
+	$("#help_container").dialog("open");
+}
+function showAbout()
+{
+	$("#about_container").dialog("open");
 }
 
 
@@ -145,7 +193,7 @@ function deviceButtonMouseOver(uuid,text)
 	<div class='controls' id='controls'>
 <ul id="menubar">
   <li><div id="button_discover" onclick="discover_devices()">Discover Devices</div></li>
-  <li> <div id="qr-button" onclick="showQR()">Show QR Scanner</div> </li>
+  <li> <div id="qr-button" onclick="showQR()" title="QR Scan">QR Scanner</div> </li>
   <li>
 	<div> 
 		<!--<label class="switch">-->
@@ -155,8 +203,8 @@ function deviceButtonMouseOver(uuid,text)
 	</label>
 	</div>
   </li>
-  <li><div>Help</div></li>
-  <li><div>About</div></li>
+  <li><div onclick="showHelp()">Help</div></li>
+  <li><div onclick="showAbout()">About</div></li>
 </ul >
 	</div>
     <script src="include/html5-qrcode.min.js"></script>
@@ -164,6 +212,8 @@ function deviceButtonMouseOver(uuid,text)
 		<div id="qr-reader" style="width:500px"></div>
 		<div id="qr-reader-results"></div>
 	</div>
+	<div id="help_container" title="Help"></div>
+	<div id="about_container" title="About"></div>
 <button type="button" class="collapsible">Unowned Devices</button>
   <div class="content" id="unowned_devices" style="max-height:100%">
   </div>
@@ -177,6 +227,9 @@ function deviceButtonMouseOver(uuid,text)
 
 var resultContainer = document.getElementById('qr-reader-results');
 var lastResult, countResults = 0;
+
+/*Make sure SO checkbox is unchecked*/
+$("#switch_so").prop("checked",false);
 
 function onScanSuccess(decodedText, decodedResult) {
     if (decodedText !== lastResult) {
@@ -498,8 +551,10 @@ for (i = 0; i < coll.length; i++) {
 	/*Turn on SO...Obeserve DPP*/
 	function observe_diplomat(obj){
 		observer_state = obj.checked;
-		console.log(observer_state);
-		socket.emit("observe_diplomat",observer_state);
+		console.log("Discover Diplomat");
+		socket.emit("discover_diplomats",observer_state);
+		console.log("SO State: "+observer_state);
+		socket.emit("set_diplomat_observe",observer_state);
 	}
 
 	/*Handle command from basic client*/
@@ -524,11 +579,30 @@ for (i = 0; i < coll.length; i++) {
 	socket.emit("get_obt_uuid");
 
 
-     socket.on('obt_uuid',(obj) => {
+     socket.on('obt_uuid',function(obj){
 	     var obt = JSON.parse(obj);
 	     obt_uuid = obt['uuid'];
 	     $("#obt_uuid").html("OBT UUID: "+obt_uuid);
       })
+
+
+    socket.on('discover_diplomats',function( msg) {
+		diplomat = JSON.parse(msg);
+		console.log(diplomat);
+		if (diplomat.owned_state == "unowned"){
+			var error_text = "Please Own the Diplomat"
+			/*Make sure SO checkbox is unchecked*/
+			$("#switch_so").prop("checked",false);
+			$.toast({
+			    heading: 'Error',
+			    text: error_text,
+			    showHideTransition: 'fade',
+			    position: 'top-center',
+			    icon: 'error'
+			});
+		}
+	})
+
 
 	/*Return of All discovered devices*/
      socket.on( 'device_discovery', function( msg ) {

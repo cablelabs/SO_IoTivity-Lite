@@ -2946,7 +2946,7 @@ diplomat_discovery(const char *anchor, const char *uri, oc_string_array_t types,
         ep = ep->next;
       }
       oc_do_observe(diplomat_uri, diplomat_ep, NULL, &observe_diplomat_cb, HIGH_QOS, NULL);
-      PRINT("Sent OBSERVE request\n");
+      PRINT("[C] Sent OBSERVE request\n");
       return OC_STOP_DISCOVERY;
     }
   }
@@ -2963,6 +2963,12 @@ discover_diplomat_for_observe(void)
   otb_mutex_unlock(app_sync_lock);
 }
 
+
+void 
+py_diplomat_set_observe(char* state)
+{
+   PRINT("[C] %s",state);
+}
 
 void
 py_discover_diplomat_for_observe(void)

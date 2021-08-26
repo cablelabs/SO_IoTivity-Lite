@@ -97,10 +97,15 @@ def handle_pairwise(data):
     for subject in ace.subjects:
         provision = my_iotivity.provision_ace(ace.target_device,str(subject),str(href),crudn)
 
-@socketio.on('observe_diplomat')
-def observe_diplomat(state):
-    ret = my_iotivity.discover_diplomats()
-    print("Observe: {}".format(ret))
+@socketio.on('discover_diplomats')
+def discover_diplomats(data):
+    diplomat = my_iotivity.discover_diplomats()
+    print("Diplomat:{}".format(to_json(diplomat)))
+    socketio.emit('discover_diplomats',to_json(diplomat))
+
+@socketio.on('set_diplomat_observe')
+def diplomat_set_observe(state):
+    my_iotivity.diplomat_set_observe(state)
 
 @socketio.on('send_command')
 def send_command(uuid,command):

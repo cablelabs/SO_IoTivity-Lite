@@ -65,6 +65,7 @@ unowned_return_list=[]
 unowned_event = threading.Event()
 owned_event = threading.Event()
 resource_event = threading.Event()
+diplomat_event = threading.Event()
 
 ten_spaces = "          "
 
@@ -530,12 +531,14 @@ class Device():
 
 class Diplomat():
 
-    def __init__(self,uuid,owned_state=None,name="",observe_state=None,target_cred=None):
+    def __init__(self,uuid=None,owned_state=None,name="",observe_state=None,target_cred=None):
         self.uuid=uuid
         self.owned_state = owned_state
         self.name = name
         self.observe_state = observe_state
         self.targer_cred = {}
+
+diplomat = Diplomat()
 
 class Iotivity():
     """ ********************************
@@ -571,7 +574,10 @@ class Iotivity():
     def diplomatCB(self,anchor,uri,state,cb_event,target,target_cred):
         uuid = str(anchor)[8:-1]
         if len(uuid):
-            diplomat = Diplomat(uuid)
+            diplomat.uuid = uuid
+        if len(state):
+            diplomat.owned_state = state
+        diplomat_event.set()
         print("Diplomat CB: UUID: {}, Uri:{} State:{} Event:{} Target:{} Target Cred:{}".format(uuid,uri,state,cb_event,target,target_cred))
     
     """ ********************************
@@ -767,9 +773,15 @@ class Iotivity():
     def discover_diplomats(self):
         print(colored(20*" "+"Discover Diplomats"+20*" ",'yellow',attrs=['underline']))
         ret = self.lib.py_discover_diplomat_for_observe();
-        return ret
+        diplomat_event.wait(5)
+        return diplomat 
 
-        
+    def diplomat_set_observe(self,state):
+        print(colored(20*" "+"Set Diplomats"+20*" ",'yellow',attrs=['underline']))
+        print("Diplomat State: {}".format(state))
+        self.lib.py_diplomat_set_observe.argtypes = [String]
+        ret = self.lib.py_diplomat_set_observe(str(state))
+
     def quit(self):
         self.lib.python_exit(c_int(0))
 

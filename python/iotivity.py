@@ -524,19 +524,21 @@ RESOURCE_CALLBACK = CFUNCTYPE(None, c_char_p, c_char_p, c_char_p, c_char_p)
 
 class Device():
 
-    def __init__(self,uuid,owned_state=None,name="",resources=None,resource_array=None):
+    def __init__(self,uuid,owned_state=None,name="",resources=None,resource_array=None, credentials=None):
         self.uuid = uuid
         self.owned_state = owned_state
         self.name = name 
+        self.credentials = credentials
+        resource_array = []
 
 class Diplomat():
 
-    def __init__(self,uuid=None,owned_state=None,name="",observe_state=None,target_cred=None):
+    def __init__(self,uuid=None,owned_state=None,name="",observe_state=None,target_dict=None):
         self.uuid=uuid
         self.owned_state = owned_state
         self.name = name
         self.observe_state = observe_state
-        self.targer_cred = {}
+        self.target_cred = {}
 
 diplomat = Diplomat()
 
@@ -989,7 +991,12 @@ class Iotivity():
         self.lib.py_discover_resourcesrestype = None
         self.lib.py_discover_resources(myuuid)
         resource_event.wait(10)
-        return {myuuid:self.resourcelist[myuuid]}
+        ret=""
+        try:
+            ret = {myuuid:self.resourcelist[myuuid]}
+        except:
+            self.discover_resources(myuuid)
+        return ret 
 
     def get_idd(self, myuuid):
         print("get_idd ", myuuid)

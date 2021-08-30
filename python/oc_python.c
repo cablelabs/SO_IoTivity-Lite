@@ -2821,10 +2821,12 @@ so_otm_cb(oc_uuid_t *uuid, int status, void *data)
 
   if (status >= 0) {
     PRINT("\nSuccessfully performed OTM on device with UUID %s\n", di);
+    inform_diplomat_python("","","","so_otm:true",di,"");
     // oc_list_add(owned_devices, device);
   } else {
     // oc_memb_free(&device_handles, device);
     PRINT("\nERROR performing ownership transfer on device %s\n", di);
+    inform_diplomat_python("","","","so_otm:false",di,"");
   }
 }
 static void
@@ -2847,17 +2849,19 @@ streamlined_onboarding_discovery_cb(oc_uuid_t *uuid, oc_endpoint_t *eps, void *d
 static void
 perform_streamlined_discovery(oc_so_info_t *so_info)
 {
-  while (so_info != NULL) {
+  if (so_info != NULL) {
     char *cred = calloc(OC_SO_MAX_CRED_LEN, 1);
     PRINT("Onboarding device with UUID %s and cred %s\n", so_info->uuid, so_info->cred);
     memcpy(cred, so_info->cred, strlen(so_info->cred));
+    PRINT("After Memcopy\n");
 
-    struct timespec onboarding_wait = { .tv_sec = 5, .tv_nsec = 0 };
-    PRINT("Sleeping for %d seconds before onboarding", onboarding_wait.tv_sec);
+    struct timespec onboarding_wait = { .tv_sec = 7, .tv_nsec = 0 };
+    PRINT("AFTER TIMESPEC\n");
     nanosleep(&onboarding_wait, &onboarding_wait);
-
+    PRINT("AFTER SLEEP\n");
+	//
     oc_obt_discover_unowned_devices(streamlined_onboarding_discovery_cb, so_info->uuid, cred);
-    so_info = so_info->next;
+    //so_info = so_info->next;
   }
   oc_so_info_free(so_info);
 }

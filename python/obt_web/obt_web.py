@@ -14,9 +14,20 @@ import simplejson as json
 import threading
 from types import SimpleNamespace
 
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template, send_from_directory,request
 from flask_socketio import SocketIO
 from iotivity import Iotivity
+
+#hostapd integration
+import WPACtrl
+
+
+#change this for DPP
+SSID= "IOT"
+PASSWORD = "secureyouriot"
+
+ssid = SSID.encode("utf-8").hex()
+password = PASSWORD.encode("utf-8").hex()
 
 
 
@@ -33,7 +44,18 @@ socketio = SocketIO(app, async_mode='threading')
 def sessions(methods=['GET','POST']):
     return render_template('index.html')
 
-
+#DPP listener
+@app.route('/dpp',methods=['POST'])
+def handle_dpp():
+    dpp = request.data.decode('utf-8')
+    print(dpp)
+    ret = wpa.request('DPP_CONFIGURATOR_ADD')
+    print(ret)
+    dpp_ret = wpa.request("DPP_QR_CODE " + dpp)
+    print(dpp_ret)
+    dpp_auth_ret = wpa.request("DPP_AUTH_INIT peer=1 conf=sta-psk configurator=1 ssid="+ssid+" pass="+password)
+    print(dpp_auth_ret)
+    return ('',200)
 
 @app.route('/include/<path:path>')
 def send_js(path):
@@ -60,6 +82,9 @@ def handle_event(data):
 @socketio.on('discover_resources')
 def handle_event(data):
     print("Discover Resources Device :{}".format(data));
+    owned_devices_resourcelist = my_iotivity.discover_resources(data)
+    print("OBT Resources: {}".format(owned_devices_resourcelist))
+    time.sleep(1);
     owned_devices_resourcelist = my_iotivity.discover_resources(data)
     print("OBT Resources: {}".format(owned_devices_resourcelist))
     #socketio.emit('owned',json.dumps(owned_devices_bytelist))
@@ -129,6 +154,13 @@ def get_obt_uuid():
 #    socketio.emit('my_response', {'data': 'Connected', 'count': 0})
 
 if __name__ == '__main__':
+
+    #initiate hostapd socket
+    wpa = WPACtrl.WPACtrl("/var/run/hostapd/wlan1")
+    #attach event listener
+    wpa.attach()
+
+
     debug = ['resources']
     my_iotivity = Iotivity(debug=debug)
     signal.signal(signal.SIGINT, my_iotivity.sig_handler)

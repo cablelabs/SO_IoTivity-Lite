@@ -27,9 +27,11 @@
     <script src="include/javascript/jquery.toast.min.js"></script>
     <script src="include/javascript/ocf_resources.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.2/socket.io.js"></script>
+    <script src="include/html5-qrcode.min.js"></script>
       <script>
 /* Jquery Function*/
 $(document).ready(function() {
+  $('#dpp_qrcod').val('');
   $('#menubar').menu();
   
   $('#menubar').menu({
@@ -126,6 +128,8 @@ var about_dialog;
 /*===================GLobals============================*/
 
 
+
+/*===============nav callbacks=====================*/
 function showQR()
 {
 	$("#qr-container").dialog("open");
@@ -138,12 +142,11 @@ function showAbout()
 {
 	$("#about_container").dialog("open");
 }
-
-
 function openDeviceDialog(device)
 {
 	$("#device_dialog_"+device).dialog("open");
 }
+/*===============nav callbacks=====================*/
 
 function showWait(parentId){
 	var b = document.getElementById(parentId);
@@ -153,13 +156,13 @@ function showWait(parentId){
 	b.append(image);
 }
 
-  function hideWait(parentId){
+function hideWait(parentId){
 	try{
 		var d = document.getElementById(parentId+'_wait_image');
 		d.remove();
 	}catch{
 	}
-  }
+}
 
 function toggle_qr(){
   var qr = document.getElementById("qr-container");
@@ -191,6 +194,18 @@ function deviceButtonMouseOver(uuid,text)
 	document.getElementById('statusbutton_'+uuid).innerHTML=text;
 }
 
+function submit_dpp()
+{
+	dpp = $("#dpp_qrcode").val();
+	$.ajax({
+	type: "POST",
+	contentType: 'application/json',
+	url: "https://"+document.domain+":"+location.port+"/dpp",
+	data: dpp,
+	});
+	console.log("submit dpp",dpp);
+}
+
   </script>
 </header>
 <section>
@@ -198,23 +213,19 @@ function deviceButtonMouseOver(uuid,text)
 <ul id="menubar">
   <li><div id="button_discover" onclick="discover_devices()">Discover Devices</div></li>
   <li> <div id="qr-button" onclick="showQR()" title="QR Scan">QR Scanner</div> </li>
-  <li>
-	<div> 
-		<!--<label class="switch">-->
-		<label for="switch_so"> Streamlined Onboarding
-	  <input type="checkbox" id='switch_so' onchange=observe_diplomat(this)>
-	  <!--<span class="slider round"></span>-->
-	</label>
-	</div>
-  </li>
   <li><div onclick="showHelp()">Help</div></li>
   <li><div onclick="showAbout()">About</div></li>
 </ul >
 	</div>
-    <script src="include/html5-qrcode.min.js"></script>
         <div id="qr-container">
 		<div id="qr-reader" style="width:500px"></div>
-		<div id="qr-reader-results"></div>
+		<div id="qr-reader-results-container" style='display:none'>
+			<form id="qr-reader-results">
+				<textarea  id="dpp_qrcode"i cols="55", rows="3">
+				</textarea>
+			</form>
+			<button class="ui-button ui-widget ui-corner-all" style="float:right" onClick="submit_dpp()">Onboard</button>
+		</div>
 	</div>
 	<div id="help_container" title="Help"></div>
 	<div id="about_container" title="About"></div>
@@ -229,7 +240,6 @@ function deviceButtonMouseOver(uuid,text)
   
 <script>
 
-var resultContainer = document.getElementById('qr-reader-results');
 var lastResult, countResults = 0;
 
 /*Make sure SO checkbox is unchecked*/
@@ -241,8 +251,9 @@ function onScanSuccess(decodedText, decodedResult) {
         lastResult = decodedText;
         // Handle on success condition with the decoded message.
         console.log(`Scan result ${decodedText}`, decodedResult);
-	var results = document.getElementById('qr-reader-results');
-	results.innerHTML=decodedText;
+	var results = document.getElementById('dpp_qrcode');
+	results.value=decodedText;
+	$('#qr-reader-results-container').show();
     }
 }
 
@@ -425,24 +436,7 @@ for (i = 0; i < coll.length; i++) {
 					    <li><a href="#access_control"+uuid>Access Control</a></li>
 					    <li><a href="#resources"+uuid>Resources</a></li>
 					  </ul>
-					  <div id="client">
-					    <p>
-					         /a/light
-					  </p>
-						  <label class="switch">
-						  <input type="checkbox" id='switch_`+uuid+`' onchange=send_command(this)>
-						  <span class="slider round"></span>
-						</label>
-					  </p>
-					  <p>
-					  /a/brightlight
-					  </p>
-					  <p>
-						<div class="slidecontainer">
-						  <input type="range" min="1" max="100" value="50">
-						</div>
-					  </p>
-
+					  <div id="client_`+uuid+`">
 					  </div>
 					  <div id="credentials">
 					    <p>Credential Type:
@@ -557,42 +551,28 @@ for (i = 0; i < coll.length; i++) {
 	}
 
 	/*Device image based oic resource types*/
-	function updateDeviceImage(device,oic_device_types){
-		/*get resource types*/
-		type="";
-		for (index in oic_device_types){
-			for (type in oic_device_types[index].types){
-				device_type = oic_device_types[index].types[type]
+	function updateDeviceImage(device){
+	 	var device_types = get_device_types(device);	
+			for(type_index in device_types){
+				device_type = device_types[type_index];
 				if (images.includes(device_type)){
 					var device_image =imagePath+device_type+".png";
 					$("#image_"+device.uuid).attr("src",device_image);
 				}
 			}
-		}
 
 	}
 
 	/*Update Devcie client based on resourse*/
-	function updateDeviceClient(device,non_oic_resources)
-	{}
+	function updateDeviceClient(device,device_types)
+	{
 
-	/*Update Device  based on returned resources*/
-	function updateDeviceResources(device){
-		var non_oic_resources = [];
-		var oic_device_types = [];
-		for (resource in device.resources){
-			/*Non OIC resources*/
-			if (!device.resources[resource].uri.includes("/oic") && !device.resources[resource].uri.includes("/oc")){
-				non_oic_resources.push(device.resources[resource]); 
-			}
-			if(device.resources[resource].uri.includes("/oic/d")){
-				oic_device_types.push(device.resources[resource]);
-				console.log("Type Resource",device.resources[resource]);
-			}
-		}
-		updateDeviceImage(device,oic_device_types);
+	
 
+	
+	
 	}
+
 
 	/*Turn on SO...Obeserve DPP*/
 	function observe_diplomat(obj){
@@ -708,7 +688,12 @@ for (i = 0; i < coll.length; i++) {
 			});
 			devices.push(device)
 			console.log("Post Resource Device Array", devices);
-			updateDeviceResources(device);
+			updateDeviceImage(device);
+			console.log(return_client_controls(device));
+			/*update client controls for owned devices*/
+			if (device.owned_state){
+				$("#client_"+uuid).html(return_client_controls(device));
+			}
 		}
 	  hideWait('button_discover');
 	})

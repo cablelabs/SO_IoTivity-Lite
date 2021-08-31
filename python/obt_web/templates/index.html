@@ -60,7 +60,7 @@ var dialog;
         $('.ui-widget-overlay').addClass('custom-overlay');
       },   
       buttons: {
-        Ok: function() {
+        Close: function() {
           $( this ).dialog( "close" );
         }
       }
@@ -148,6 +148,9 @@ function openDeviceDialog(device)
 }
 /*===============nav callbacks=====================*/
 
+
+
+/*==============UI Helpers=========================*/
 function showWait(parentId){
 	var b = document.getElementById(parentId);
 	var image = document.createElement("img");
@@ -155,7 +158,6 @@ function showWait(parentId){
 	image.setAttribute('src',imagePath+'loader.gif');
 	b.append(image);
 }
-
 function hideWait(parentId){
 	try{
 		var d = document.getElementById(parentId+'_wait_image');
@@ -163,7 +165,6 @@ function hideWait(parentId){
 	}catch{
 	}
 }
-
 function toggle_qr(){
   var qr = document.getElementById("qr-container");
   var qr_button = document.getElementById("qr-button");
@@ -175,7 +176,26 @@ function toggle_qr(){
     qr_button.innerHTML = "Show QR Scanner";	  
   }
 }
+/*Make sure SO checkbox is unchecked*/
+$("#switch_so").prop("checked",false);
 
+var lastResult, countResults = 0;
+function onScanSuccess(decodedText, decodedResult) {
+    if (decodedText !== lastResult) {
+        ++countResults;
+        lastResult = decodedText;
+        // Handle on success condition with the decoded message.
+        console.log(`Scan result ${decodedText}`, decodedResult);
+	var results = document.getElementById('dpp_qrcode');
+	results.value=decodedText;
+	$('#qr-reader-results-container').show();
+    }
+}
+/*==============UI Helpers=========================*/
+
+
+
+/*=============Format Helpers=====================*/
 function capitalize(s)
 {
     return s[0].toUpperCase() + s.slice(1);
@@ -187,13 +207,11 @@ function formatUUID(s)
 	var ret = sarray[0]+"-"+sarray[1]+"-"+sarray[2]+"<br>"+sarray[3]+"-"+sarray[4];
 	return ret;
 }
+/*=============Format Helpers=====================*/
 
-function deviceButtonMouseOver(uuid,text)
-{
-	//alert(uuid);
-	document.getElementById('statusbutton_'+uuid).innerHTML=text;
-}
 
+
+/*=============QR and DPP=========================*/
 function submit_dpp()
 {
 	dpp = $("#dpp_qrcode").val();
@@ -205,6 +223,7 @@ function submit_dpp()
 	});
 	console.log("submit dpp",dpp);
 }
+/*=============QR and DPP=========================*/
 
   </script>
 </header>
@@ -240,22 +259,7 @@ function submit_dpp()
   
 <script>
 
-var lastResult, countResults = 0;
 
-/*Make sure SO checkbox is unchecked*/
-$("#switch_so").prop("checked",false);
-
-function onScanSuccess(decodedText, decodedResult) {
-    if (decodedText !== lastResult) {
-        ++countResults;
-        lastResult = decodedText;
-        // Handle on success condition with the decoded message.
-        console.log(`Scan result ${decodedText}`, decodedResult);
-	var results = document.getElementById('dpp_qrcode');
-	results.value=decodedText;
-	$('#qr-reader-results-container').show();
-    }
-}
 
 var html5QrcodeScanner = new Html5QrcodeScanner(
     "qr-reader", { fps: 10, qrbox: 250 });
@@ -436,7 +440,9 @@ for (i = 0; i < coll.length; i++) {
 					    <li><a href="#access_control"+uuid>Access Control</a></li>
 					    <li><a href="#resources"+uuid>Resources</a></li>
 					  </ul>
-					  <div id="client_`+uuid+`">
+					  <div id="client">
+						  <div id="client_`+uuid+`">
+						  </div>
 					  </div>
 					  <div id="credentials">
 					    <p>Credential Type:

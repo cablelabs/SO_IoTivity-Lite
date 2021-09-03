@@ -2817,7 +2817,7 @@ so_otm_cb(oc_uuid_t *uuid, int status, void *data)
 {
   (void)data;
   char di[37];
-  oc_uuid_to_str(uuid, di, 37);
+  oc_uuid_to_str(uuid, di, OC_UUID_LEN);
 
   if (status >= 0) {
     PRINT("\nSuccessfully performed OTM on device with UUID %s\n", di);
@@ -2855,7 +2855,7 @@ perform_streamlined_discovery(oc_so_info_t *so_info)
     memcpy(cred, so_info->cred, strlen(so_info->cred));
     PRINT("After Memcopy\n");
 
-    struct timespec onboarding_wait = { .tv_sec = 7, .tv_nsec = 0 };
+    struct timespec onboarding_wait = { .tv_sec = 8, .tv_nsec = 0 };
     PRINT("AFTER TIMESPEC\n");
     nanosleep(&onboarding_wait, &onboarding_wait);
     PRINT("AFTER SLEEP\n");
@@ -2872,15 +2872,15 @@ observe_diplomat_cb(oc_client_response_t *data)
   if (data->code > 4) {
     PRINT("Observe GET failed with code %d\n", data->code);
     //char* c = (char *) data->code;
-    char code[20];
-    snprintf(code,sizeof(code),"%d",data->code);
+    char code[40];
+    snprintf(code,sizeof(code),"observe_fail:%d",data->code);
     inform_diplomat_python("","","",code,"","");
     return;
   }
   oc_rep_t *rep = data->payload;
   oc_rep_t *so_info_rep_array = NULL;
   if(rep == NULL){
-	char* error = "ERROR:Obeserve Payload Response";
+	char* error = "observe_fail:nopayload";
         inform_diplomat_python("","","",error,"","");
 	return;
   }
@@ -2972,6 +2972,15 @@ void
 py_diplomat_set_observe(char* state)
 {
    PRINT("[C] %s",state);
+}
+
+
+void
+py_diplomat_stop_observe(char* uuid)
+{
+  (void)uuid;
+  PRINT("Stopping OBSERVE\n");
+  //oc_stop_observe(a_light, light_server);
 }
 
 void

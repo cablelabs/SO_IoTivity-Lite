@@ -176,21 +176,6 @@ function toggle_qr(){
     qr_button.innerHTML = "Show QR Scanner";	  
   }
 }
-/*Make sure SO checkbox is unchecked*/
-$("#switch_so").prop("checked",false);
-
-var lastResult, countResults = 0;
-function onScanSuccess(decodedText, decodedResult) {
-    if (decodedText !== lastResult) {
-        ++countResults;
-        lastResult = decodedText;
-        // Handle on success condition with the decoded message.
-        console.log(`Scan result ${decodedText}`, decodedResult);
-	var results = document.getElementById('dpp_qrcode');
-	results.value=decodedText;
-	$('#qr-reader-results-container').show();
-    }
-}
 /*==============UI Helpers=========================*/
 
 
@@ -222,6 +207,25 @@ function submit_dpp()
 	data: dpp,
 	});
 	console.log("submit dpp",dpp);
+	/*hide the QR DIV*/
+        $("#qr-container").dialog( "close" );
+
+}
+/*Make sure SO checkbox is unchecked*/
+$("#switch_so").prop("checked",false);
+
+var lastResult, countResults = 0;
+function onScanSuccess(decodedText, decodedResult) {
+     html5QrcodeScanner.clear();
+    if (decodedText !== lastResult) {
+        ++countResults;
+        lastResult = decodedText;
+        // Handle on success condition with the decoded message.
+        console.log(`Scan result ${decodedText}`, decodedResult);
+	var results = document.getElementById('dpp_qrcode');
+	results.value=decodedText;
+	$('#qr-reader-results-container').show();
+    }
 }
 /*=============QR and DPP=========================*/
 
@@ -569,16 +573,6 @@ for (i = 0; i < coll.length; i++) {
 
 	}
 
-	/*Update Devcie client based on resourse*/
-	function updateDeviceClient(device,device_types)
-	{
-
-	
-
-	
-	
-	}
-
 
 	/*Turn on SO...Obeserve DPP*/
 	function observe_diplomat(obj){
@@ -634,6 +628,16 @@ for (i = 0; i < coll.length; i++) {
 			});
 		}
 	})
+
+	/*Return of stremalined onboarding*/
+	socket.on('diplomat_state', function(msg) {
+		so_event = JSON.parse(msg);
+		console.log(so_event);
+		discover_devices();
+
+
+	})
+
 
 
 	/*Return of All discovered devices*/

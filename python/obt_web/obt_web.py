@@ -130,7 +130,8 @@ def discover_diplomats(data):
 
 @socketio.on('set_diplomat_observe')
 def diplomat_set_observe(state):
-    my_iotivity.diplomat_set_observe(state)
+    diplomat = my_iotivity.diplomat_set_observe(state)
+    socketio.emit('diplomat_state',to_json(diplomat))
 
 @socketio.on('send_command')
 def send_command(uuid,command):

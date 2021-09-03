@@ -66,6 +66,7 @@ unowned_event = threading.Event()
 owned_event = threading.Event()
 resource_event = threading.Event()
 diplomat_event = threading.Event()
+so_event = threading.Event()
 
 ten_spaces = "          "
 
@@ -533,12 +534,13 @@ class Device():
 
 class Diplomat():
 
-    def __init__(self,uuid=None,owned_state=None,name="",observe_state=None,target_dict=None):
+    def __init__(self,uuid=None,owned_state=None,name="",observe_state=None,target_dict=None,last_event=None):
         self.uuid=uuid
         self.owned_state = owned_state
         self.name = name
         self.observe_state = observe_state
         self.target_cred = {}
+        self.last_event = last_event
 
 diplomat = Diplomat()
 
@@ -579,6 +581,10 @@ class Iotivity():
             diplomat.uuid = uuid
         if len(state):
             diplomat.owned_state = state
+        if cb_event is not None:
+            last_event = diplomat.last_event=cb_event.decode('utf-8').split(":",1) 
+            if last_event[0] == "so_otm":
+                so_event.set()
         diplomat_event.set()
         print("Diplomat CB: UUID: {}, Uri:{} State:{} Event:{} Target:{} Target Cred:{}".format(uuid,uri,state,cb_event,target,target_cred))
     
@@ -779,10 +785,14 @@ class Iotivity():
         return diplomat 
 
     def diplomat_set_observe(self,state):
+        state = copy.deepcopy(state)
         print(colored(20*" "+"Set Diplomats"+20*" ",'yellow',attrs=['underline']))
         print("Diplomat State: {}".format(state))
         self.lib.py_diplomat_set_observe.argtypes = [String]
         ret = self.lib.py_diplomat_set_observe(str(state))
+        print("Waiting for Streamlined OTM ")
+        so_event.wait()
+        return diplomat
 
     def quit(self):
         self.lib.python_exit(c_int(0))

@@ -229,6 +229,45 @@ function onScanSuccess(decodedText, decodedResult) {
 }
 /*=============QR and DPP=========================*/
 
+
+/*=============Form Checks=========================*/
+
+function access_control_check(element,uuid){
+	var error = 0;
+	console.log("Change "+ element.id+" "+uuid);
+	//Check that the resource selector is not blank
+	if(!$("#access_control_resource_selector_"+uuid).val()){
+			error=1;
+	}
+	//Check permissions We need at least one 
+	var crudn = [];
+	$("input:checkbox[name=access_control_permissions_check_"+uuid+"]:checked").each(function() {
+	  crudn.push($(this).val());
+	});
+	if(!crudn.length){
+		error=1;
+	}
+	//Check the subjects we need at least one 
+	var subject_devices = $("#access_control_device_selector_"+uuid).val();
+	if(!subject_devices.length){
+		error =1;
+	}
+	console.log(error);
+	//If we have not error enable the button
+	if(error==0){
+		$("#access_control_button_"+uuid).prop('disabled',false);
+		$("#access_control_button_"+uuid).button("refresh");
+	}else{
+		$("#access_control_button_"+uuid).prop('disabled',true);
+		$("#access_control_button_"+uuid).button("refresh");
+	}
+}
+
+
+
+
+/*=============Form Checks=========================*/
+
   </script>
 </header>
 <section>
@@ -463,23 +502,43 @@ for (i = 0; i < coll.length; i++) {
 					  </div>
 					  <div id="access_control">
 					    <p> Resource
-						  <select id='access_control_resource_selector_`+uuid+`'>
+						  <select id='access_control_resource_selector_`+uuid+`' onchange='access_control_check(this,"`+uuid+`")'>
 					          	<option disabled selected> Choose a resource</option> 
 					  	  </select>
 					    </p>
 					    <p>
 					  	<fieldset id='access_control_permissions_`+uuid+`'>
 
-							  <input type='checkbox' checked name='access_control_permissions_check_`+uuid+`' value='create'>Create</input>
-							  <input type='checkbox' checked name='access_control_permissions_check_`+uuid+`' value='retrieve'>Retrieve</input>
-							  <input type='checkbox' checked name='access_control_permissions_check_`+uuid+`' value='update'>Update</input>
-							  <input type='checkbox' checked name='access_control_permissions_check_`+uuid+`' value='delete'>Delete</input>
-							  <input type='checkbox' checked name='access_control_permissions_check_`+uuid+`' value='notify'>Notify</input>
+							  <input type='checkbox' checked  id='access_control_permissions_create_`+uuid+`'
+							  	name='access_control_permissions_check_`+uuid+`'
+								value='create' onchange='access_control_check(this,"`+uuid+`")'>
+								Create
+							  </input>
+							  <input type='checkbox' checked  id='access_control_permissions_retrieve_`+uuid+`'
+							  	name='access_control_permissions_check_`+uuid+`' 
+								value='retrieve' onchange='access_control_check(this,"`+uuid+`")'>
+								Retrieve
+							  </input>
+							  <input type='checkbox' checked  id='access_control_permissions_update_`+uuid+`'
+							  	name='access_control_permissions_check_`+uuid+`' 
+								value='update' onchange='access_control_check(this,"`+uuid+`")'>
+								Update
+							  </input>
+							  <input type='checkbox' checked  id='access_control_permissions_delete_`+uuid+`'
+								  name='access_control_permissions_check_`+uuid+`' 
+								  value='delete' onchange='access_control_check(this,"`+uuid+`")'>
+								  Delete
+							  </input>
+							  <input type='checkbox' checked  id='access_control_permissions_notify_`+uuid+`'
+								  name='access_control_permissions_check_`+uuid+`' 
+								  value='notify' onchange='access_control_check(this,"`+uuid+`")'>
+								  Notify
+							  </input>
 
 					  	</fieldset>
 					    </p>
 					    <p id='access_control_device_`+uuid+`'>
-					    	<select id='access_control_device_selector_`+uuid+`' multiple='multiple'>
+					    	<select id='access_control_device_selector_`+uuid+`' multiple='multiple' onchange='access_control_check(this,"`+uuid+`")'>
 						</select>
 					    </p>
 					    <p id='access_control_`+uuid+`'>
@@ -511,13 +570,23 @@ for (i = 0; i < coll.length; i++) {
 						$('#cred_'+uuid).append(cred_button);
 				      		
 				      		/*Access Control Button*/
-					    var access_control_button = document.createElement("div");
-						access_control_button.setAttribute('id','access_controlsbutton_'+uuid);
-						access_control_button.setAttribute('onclick','addACE("'+uuid+'")');
-						access_control_button.setAttribute('class','w3-button w3-green w3-round-large');
-						access_control_button.innerHTML = "Add ACE";
-						access_control_button.setAttribute('style','margin:2px;float:right;font-size:20px;opacity:1');
-						$('#access_control_'+uuid).append(access_control_button);
+					    var access_control_button_container = document.createElement("div");
+						access_control_button_container.setAttribute('id','access_control_button_container_'+uuid);
+						//access_control_button.setAttribute('onclick','addACE("'+uuid+'")');
+						//access_control_button.setAttribute('class','w3-button w3-green w3-round-large');
+						//access_control_button.innerHTML = "Add ACE";
+						access_control_button_container.setAttribute('style','margin:2px;float:right;font-size:20px;opacity:1');
+				      		var access_control_button = $('<button/>',
+							{
+								text:"Add ACE",
+								disabled:true,
+								click:function(){addACE(uuid);},
+								id:"access_control_button_"+uuid
+							});
+						$('#access_control_'+uuid).append(access_control_button_container);
+				                //$('#access_control_'+uuid).button();
+				      		access_control_button.button();
+				      		$('#access_control_button_container_'+uuid).append(access_control_button);
 
 				      	/*Fill resources Tab*/
 				        
@@ -612,8 +681,12 @@ for (i = 0; i < coll.length; i++) {
       })
 
 
+    /*============Diplomat Callbacks==============
+	*        Handles callbacks for diplomat 
+    =============================================*/
     socket.on('discover_diplomats',function( msg) {
 		diplomat = JSON.parse(msg);
+	        var ace_error = 6;
 		console.log(diplomat);
 		if (diplomat.owned_state == "unowned"){
 			var error_text = "Please Own the Diplomat"
@@ -626,6 +699,23 @@ for (i = 0; i < coll.length; i++) {
 			    position: 'top-center',
 			    icon: 'error'
 			});
+		}
+	        if(diplomat.last_event !== null){
+			console.log(diplomat.last_event);
+			if (diplomat.last_event[0] == "observe_fail"){
+				if(diplomat.last_event[1] == ace_error){
+					/*Make sure SO checkbox is unchecked*/
+					var error_text = "Diplomat needs the correct ACE"
+					$("#switch_so").prop("checked",false);
+					$.toast({
+					    heading: 'Error',
+					    text: error_text,
+					    showHideTransition: 'fade',
+					    position: 'top-center',
+					    icon: 'error'
+					});
+				}
+			}
 		}
 	})
 

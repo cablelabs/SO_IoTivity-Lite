@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "ocf_dpp.h"
 
 pthread_mutex_t mutex;
 pthread_cond_t cv;
@@ -274,7 +275,7 @@ handle_signal(int signal)
 }
 
 int
-main(void)
+main(int argc, char *argv[])
 {
   PRINT("STARTING SIMPLE SERVER\n");
   int init;
@@ -305,6 +306,14 @@ main(void)
   if (init < 0)
     return init;
 
+ /* Generate streamlined onboarding info if in RFOTM */
+  if (oc_so_info_init() == 0) {
+    OC_DBG("Generated streamlined onboarding info");
+    if (argc > 1 && (dpp_so_init(argv[1]) < 0 || dpp_send_so_info() < 0)) {
+      OC_ERR("Failed to provide streamlined onboarding information to wpa_supplicant");
+    }
+  }
+
   while (quit != 1) {
     next_event = oc_main_poll();
     pthread_mutex_lock(&mutex);
@@ -318,6 +327,7 @@ main(void)
     pthread_mutex_unlock(&mutex);
   }
   oc_free_string(&name);
+  dpp_so_teardown();
   oc_main_shutdown();
   GPIOUnexport(POUT);
   return 0;

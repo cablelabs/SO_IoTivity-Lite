@@ -365,10 +365,6 @@ simpleserver: libiotivity-lite-server.a $(ROOT_DIR)/apps/simpleserver.c
 	@mkdir -p $@_creds
 	${CC} -o $@ ../../apps/simpleserver.c libiotivity-lite-server.a -DOC_SERVER ${CFLAGS}  ${LIBS}
 
-simpleserver_raspberry_pi: libiotivity-lite-server.a $(ROOT_DIR)/apps/simpleserver_raspberry_pi.c
-	@mkdir -p $@_creds
-	${CC} -o $@ ../../apps/simpleserver_raspberry_pi.c libiotivity-lite-server.a -DOC_SERVER ${CFLAGS}  ${LIBS}
-
 secure_mcast_server1: libiotivity-lite-server.a $(ROOT_DIR)/apps/secure_mcast_server1.c
 	@mkdir -p $@_creds
 	${CC} -o $@ ../../apps/secure_mcast_server1.c libiotivity-lite-server.a -DOC_SERVER ${CFLAGS}  ${LIBS}
@@ -469,6 +465,10 @@ speaker_client: $(ROOT_DIR)/apps/streamlined_onboarding/wifi_speaker/speaker_cli
 	${CC} -o $@ $^ -DOC_CLIENT ${CFLAGS} -I$(ROOT_DIR)/apps/streamlined_onboarding/include/ ${LIBS}
 
 dpp_diplomat: $(ROOT_DIR)/apps/streamlined_onboarding/dpp_diplomat/dpp_diplomat.c libiotivity-lite-server.a $(SO_DPP_OBJ)
+	@mkdir -p $@_creds
+	${CC} -o $@ $^ -DOC_SERVER ${CFLAGS} -I$(ROOT_DIR)/apps/streamlined_onboarding/include/ ${LIBS}
+
+simpleserver_raspberry_pi: $(ROOT_DIR)/apps/streamlined_onboarding/simpleserver_raspberry_pi.c libiotivity-lite-server.a $(SO_DPP_OBJ)
 	@mkdir -p $@_creds
 	${CC} -o $@ $^ -DOC_SERVER ${CFLAGS} -I$(ROOT_DIR)/apps/streamlined_onboarding/include/ ${LIBS}
 

@@ -231,10 +231,9 @@ function onScanSuccess(decodedText, decodedResult) {
 
 
 /*=============Form Checks=========================*/
-
+//Access Control Checks
 function access_control_check(element,uuid){
 	var error = 0;
-	console.log("Change "+ element.id+" "+uuid);
 	//Check that the resource selector is not blank
 	if(!$("#access_control_resource_selector_"+uuid).val()){
 			error=1;
@@ -252,14 +251,35 @@ function access_control_check(element,uuid){
 	if(!subject_devices.length){
 		error =1;
 	}
-	console.log(error);
-	//If we have not error enable the button
+	//If we have no error enable the button
 	if(error==0){
 		$("#access_control_button_"+uuid).prop('disabled',false);
 		$("#access_control_button_"+uuid).button("refresh");
 	}else{
 		$("#access_control_button_"+uuid).prop('disabled',true);
 		$("#access_control_button_"+uuid).button("refresh");
+	}
+}
+
+//Credentials Check
+function credentials_check(element,uuid){
+	var error = 0;
+	//Check that the credential selector is not blank
+	if(!$("#credential_selector_"+uuid).val()){
+			error=1;
+	}
+	//Check the subjects we need at least one 
+	var subject_devices = $("#credential_device_selector_"+uuid).val();
+	if(!subject_devices.length){
+		error =1;
+	}
+	//If we have no error enable the button
+	if(error==0){
+		$("#cred_button_"+uuid).prop('disabled',false);
+		$("#cred_button_"+uuid).button("refresh");
+	}else{
+		$("#cred_button_"+uuid).prop('disabled',true);
+		$("#cred_button_"+uuid).button("refresh");
 	}
 }
 
@@ -489,14 +509,14 @@ for (i = 0; i < coll.length; i++) {
 					  </div>
 					  <div id="credentials">
 					    <p>Credential Type:
-						<select id='credential_selector_`+uuid+`'>
+						<select id='credential_selector_`+uuid+`' onchange='credentials_check(this,"`+uuid+`")'>
 					  		<option disabled selected> Choose a credential type</option>
 					  		<option value='pairwise'>Pairwise</option>
 					  		<option value='role'>Role</option>
 					  	</select>
 					    </p>
 					    <p id='cred_`+uuid+`'>
-					    	<select id='credential_device_selector_`+uuid+`' multiple='multiple'>
+					    	<select id='credential_device_selector_`+uuid+`' multiple='multiple' onchange='credentials_check(this,"`+uuid+`")'>
 						</select>
 					    </p>
 					  </div>
@@ -561,20 +581,23 @@ for (i = 0; i < coll.length; i++) {
 				      });
 				      $('#access_control_device_selector_'+uuid).multiSelect('addOption', { value: obt_uuid, text: "OBT: "+obt_uuid });
 				      		/*Credential Button*/
-					    var cred_button = document.createElement("div");
-						cred_button.setAttribute('id','credsbutton_'+uuid);
-						cred_button.setAttribute('onclick','addCredentials("'+uuid+'")');
-						cred_button.setAttribute('class','w3-button w3-green w3-round-large');
-						cred_button.innerHTML = "Add Credentials";
-						cred_button.setAttribute('style','margin:2px;float:right;font-size:20px;opacity:1');
-						$('#cred_'+uuid).append(cred_button);
+					    var cred_button_container = document.createElement("div");
+						cred_button_container.setAttribute('id','cred_button_container_'+uuid);
+						cred_button_container.setAttribute('style','margin:2px;float:right;font-size:20px;opacity:1');
+				      		var cred_button = $('<button/>',
+							{
+								text:"Add Credential",
+								disabled:true,
+								click:function(){addCredentials(uuid);},
+								id:"cred_button_"+uuid
+							});
+						$('#cred_'+uuid).append(cred_button_container);
+				      		cred_button.button();
+				      		$('#cred_button_container_'+uuid).append(cred_button);
 				      		
 				      		/*Access Control Button*/
 					    var access_control_button_container = document.createElement("div");
 						access_control_button_container.setAttribute('id','access_control_button_container_'+uuid);
-						//access_control_button.setAttribute('onclick','addACE("'+uuid+'")');
-						//access_control_button.setAttribute('class','w3-button w3-green w3-round-large');
-						//access_control_button.innerHTML = "Add ACE";
 						access_control_button_container.setAttribute('style','margin:2px;float:right;font-size:20px;opacity:1');
 				      		var access_control_button = $('<button/>',
 							{
@@ -584,7 +607,6 @@ for (i = 0; i < coll.length; i++) {
 								id:"access_control_button_"+uuid
 							});
 						$('#access_control_'+uuid).append(access_control_button_container);
-				                //$('#access_control_'+uuid).button();
 				      		access_control_button.button();
 				      		$('#access_control_button_container_'+uuid).append(access_control_button);
 
@@ -687,7 +709,7 @@ for (i = 0; i < coll.length; i++) {
     socket.on('discover_diplomats',function( msg) {
 		diplomat = JSON.parse(msg);
 	        var ace_error = 6;
-		console.log(diplomat);
+		console.log("Diplomat:\n",diplomat);
 		if (diplomat.owned_state == "unowned"){
 			var error_text = "Please Own the Diplomat"
 			/*Make sure SO checkbox is unchecked*/
@@ -701,7 +723,7 @@ for (i = 0; i < coll.length; i++) {
 			});
 		}
 	        if(diplomat.last_event !== null){
-			console.log(diplomat.last_event);
+			console.log("Diplomat:\n",diplomat.last_event);
 			if (diplomat.last_event[0] == "observe_fail"){
 				if(diplomat.last_event[1] == ace_error){
 					/*Make sure SO checkbox is unchecked*/
@@ -789,7 +811,7 @@ for (i = 0; i < coll.length; i++) {
 			devices.push(device)
 			console.log("Post Resource Device Array", devices);
 			updateDeviceImage(device);
-			console.log(return_client_controls(device));
+			//console.log(return_client_controls(device));
 			/*update client controls for owned devices*/
 			if (device.owned_state){
 				$("#client_"+uuid).html(return_client_controls(device));
@@ -860,8 +882,10 @@ for (i = 0; i < coll.length; i++) {
 				      var other_uuid = owned_devices_stack[index2];
 	    			      if (current_uuid != other_uuid)
 	    				{
-					      $('#access_control_device_selector_'+current_uuid).multiSelect('addOption', { value: other_uuid, text: other_uuid });
-					      $('#credential_device_selector_'+current_uuid).multiSelect('addOption', { value: other_uuid, text: other_uuid });
+					     var device = devices.filter(dev => dev.uuid == other_uuid);
+						console.log("Dev Name: ",device);
+					      $('#access_control_device_selector_'+current_uuid).multiSelect('addOption', { value: other_uuid, text: device[0].name+": "+other_uuid });
+					      $('#credential_device_selector_'+current_uuid).multiSelect('addOption', { value: other_uuid, text: device[0].name+": "+other_uuid });
 	    				}
 	    		       }
 	        	}

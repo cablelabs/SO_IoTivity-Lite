@@ -37,11 +37,12 @@ function return_client_controls(device){
 		device_type = device_types[type_index];
 		switch(device_type){
 		case "oic.d.light":
+			var cmd = 'post';
 			client_controls += `
 			 <div>`+device_type+`</div>
 			  <div>
 				  <label class="switch">
-				  <input type="checkbox" id='switch_`+device.uuid+`' onchange=send_command(this)>
+				  <input type="checkbox" id='switch_`+device.uuid+`' onchange=send_command(this,'`+device_type+`','`+cmd+`')>
 				  <span class="slider round"></span>
 				</label>
 			  </div>

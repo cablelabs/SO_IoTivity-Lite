@@ -1029,11 +1029,16 @@ class Iotivity():
                     print ("    ", value)  
         
 
-    def client_command(self,uuid,command):
-        print(colored(20*" "+"Client Command->Target:{}-->{}"+20*" ",'yellow',attrs=['underline']).format(uuid,command))
-        self.lib.py_post.argtypes = [String]
-        self.lib.py_post.restype = None
-        self.lib.py_post(uuid,command)
+    def client_command(self,uuid,command,resource,value):
+        print(colored(20*" "+"Client Command->Target:{}-->Res:{}-->Cmd:{}-->Val:{}"+20*" ",'yellow',attrs=['underline']).format(uuid,command,resource,value))
+        #self.lib.py_post.argtypes = [String]
+        #self.lib.py_post.restype = None
+        #self.lib.py_post(uuid,command)
+        self.lib.discover_light()
+        time.sleep(5)
+        self.lib.change_light.argtypes = [c_int]
+        self.lib.change_light.restype = None
+        self.lib.change_light(value)
         return "ok"
 
 

@@ -2992,7 +2992,169 @@ py_discover_diplomat_for_observe(void)
 }
 #endif /* OC_SO */
 
+#ifdef OC_CLIENT
 
+static char a_light[MAX_URI_LENGTH];
+static oc_endpoint_t *light_server;
+
+static bool state;
+static int power;
+static oc_string_t name;
+
+/*
+static void
+post_light(oc_client_response_t *data)
+{
+  PRINT("POST_light:\n");
+  if (data->code == OC_STATUS_CHANGED)
+    PRINT("POST response: CHANGED\n");
+  else if (data->code == OC_STATUS_CREATED)
+    PRINT("POST response: CREATED\n");
+  else
+    PRINT("POST response code %d\n", data->code);
+
+  if (oc_init_post(a_light, light_server, NULL, NULL, LOW_QOS, NULL)) {
+    oc_rep_start_root_object();
+    oc_rep_set_boolean(root, state, true);
+    oc_rep_set_int(root, power, 55);
+    oc_rep_end_root_object();
+    if (oc_do_post())
+      PRINT("Sent POST request\n");
+    else
+      PRINT("Could not send POST request\n");
+  } else
+    PRINT("Could not init POST request\n");
+}
+static void
+put_light(oc_client_response_t *data)
+{
+  PRINT("PUT_light:\n");
+
+  if (data->code == OC_STATUS_CHANGED)
+    PRINT("PUT response: CHANGED\n");
+  else
+    PRINT("PUT response code %d\n", data->code);
+
+  if (oc_init_post(a_light, light_server, NULL, &post_light, LOW_QOS, NULL)) {
+    oc_rep_start_root_object();
+    oc_rep_set_boolean(root, state, false);
+    oc_rep_set_int(root, power, 105);
+    oc_rep_end_root_object();
+    if (oc_do_post())
+      PRINT("Sent POST request\n");
+    else
+      PRINT("Could not send POST request\n");
+  } else
+    PRINT("Could not init POST request\n");
+}
+    */
+
+static void
+post_light_response_cb(oc_client_response_t *data)
+{
+  if (data->code > OC_STATUS_CHANGED) {
+    OC_ERR("POST returned unexpected response code %d\n", data->code);
+  }
+  //external_cb(&my_state);
+  //my_state.error_state = false;
+}
+
+static void
+get_light(oc_client_response_t *data)
+{
+  PRINT("GET_light:\n");
+  oc_rep_t *rep = data->payload;
+  while (rep != NULL) {
+    PRINT("key %s, value ", oc_string(rep->name));
+    switch (rep->type) {
+    case OC_REP_BOOL:
+      PRINT("%d\n", rep->value.boolean);
+      state = rep->value.boolean;
+      break;
+    case OC_REP_INT:
+      PRINT("%lld\n", rep->value.integer);
+      power = (int)rep->value.integer;
+      break;
+    case OC_REP_STRING:
+      PRINT("%s\n", oc_string(rep->value.string));
+      oc_free_string(&name);
+    //  oc_new_string(&name, oc_string(rep->value.string), oc_string_len(rep->value.string));
+      break;
+    default:
+      break;
+    }
+    rep = rep->next;
+  }
+}
+static oc_discovery_flags_t
+discovery_cb(const char *anchor, const char *uri, oc_string_array_t types,
+          oc_interface_mask_t iface_mask, oc_endpoint_t *endpoint,
+          oc_resource_properties_t bm, void *user_data)
+{
+  (void)anchor;
+  (void)user_data;
+  (void)iface_mask;
+  (void)bm;
+  int i;
+  int uri_len = strlen(uri);
+  uri_len = (uri_len >= MAX_URI_LENGTH) ? MAX_URI_LENGTH - 1 : uri_len;
+  for (i = 0; i < (int)oc_string_array_get_allocated_size(types); i++) {
+    char *t = oc_string_array_get_item(types, i);
+    if (strlen(t) == 10 && strncmp(t, "core.light", 10) == 0) {
+      oc_endpoint_list_copy(&light_server, endpoint);
+      strncpy(a_light, uri, uri_len);
+      a_light[uri_len] = '\0';
+
+      PRINT("Resource %s hosted at endpoints:\n", a_light);
+      oc_endpoint_t *ep = endpoint;
+      while (ep != NULL) {
+        PRINTipaddr(*ep);
+        PRINT("\n");
+        ep = ep->next;
+      }
+
+     oc_do_get(a_light, light_server, NULL, &get_light, LOW_QOS, NULL);
+
+      return OC_STOP_DISCOVERY;
+    }
+  }
+  return OC_CONTINUE_DISCOVERY;
+}
+
+void
+discover_light(void)
+{
+  oc_do_ip_discovery("core.light", &discovery_cb, NULL);
+  //oc_do_get(a_light, light_server, NULL, &get_light, LOW_QOS, NULL);
+}
+
+void
+change_light(int value)
+{
+  PRINT("[C] POST_light: %d\n",value);
+  //(void)value;
+  bool light_cmd;
+  if (value==1){
+	  light_cmd=true;
+  }else{
+	  light_cmd=false;
+  }
+  PRINT("SETTING LIGHT\n");
+  //oc_do_ip_discovery("core.light", &discovery_cb, NULL);
+  if (oc_init_post(a_light, light_server, NULL, &post_light_response_cb, LOW_QOS, NULL)) {
+    oc_rep_start_root_object();
+    oc_rep_set_boolean(root, state, light_cmd);
+    //oc_rep_set_int(root, power, 55);
+    oc_rep_end_root_object();
+    if (oc_do_post())
+      PRINT("Sent POST request\n");
+    else
+      PRINT("Could not send POST request\n");
+ } else{
+    PRINT("Could not init POST request\n");
+ }
+}
+#endif /*OC Client*/
 
 int
 python_main(void)

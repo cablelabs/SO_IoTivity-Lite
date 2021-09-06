@@ -134,9 +134,9 @@ def diplomat_set_observe(state):
     socketio.emit('diplomat_state',to_json(diplomat))
 
 @socketio.on('send_command')
-def send_command(uuid,command):
+def send_command(uuid,command,resource,value):
     #print("Device:{},Command:{}".format(uuid,command))
-    ret = my_iotivity.client_command(uuid,command)
+    ret = my_iotivity.client_command(uuid,command,resource,value)
 
 @socketio.on('get_obt_uuid')
 def get_obt_uuid():

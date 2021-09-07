@@ -3000,6 +3000,7 @@ static oc_endpoint_t *light_server;
 static bool state;
 static int power;
 static oc_string_t name;
+static bool discovered;
 
 /*
 static void
@@ -3106,6 +3107,7 @@ discovery_cb(const char *anchor, const char *uri, oc_string_array_t types,
       a_light[uri_len] = '\0';
 
       PRINT("Resource %s hosted at endpoints:\n", a_light);
+      discovered = true;
       oc_endpoint_t *ep = endpoint;
       while (ep != NULL) {
         PRINTipaddr(*ep);
@@ -3113,7 +3115,7 @@ discovery_cb(const char *anchor, const char *uri, oc_string_array_t types,
         ep = ep->next;
       }
 
-     oc_do_get(a_light, light_server, NULL, &get_light, LOW_QOS, NULL);
+	//oc_do_get(a_light, light_server, NULL, &get_light, LOW_QOS, NULL);
 
       return OC_STOP_DISCOVERY;
     }
@@ -3125,7 +3127,7 @@ void
 discover_light(void)
 {
   oc_do_ip_discovery("core.light", &discovery_cb, NULL);
-  //oc_do_get(a_light, light_server, NULL, &get_light, LOW_QOS, NULL);
+  oc_do_get(a_light, light_server, NULL, &get_light, LOW_QOS, NULL);
 }
 
 void
@@ -3139,8 +3141,20 @@ change_light(int value)
   }else{
 	  light_cmd=false;
   }
+  /*
   PRINT("SETTING LIGHT\n");
-  //oc_do_ip_discovery("core.light", &discovery_cb, NULL);
+    otb_mutex_lock(app_sync_lock);
+	if (!oc_do_ip_discovery("core.light", &discovery_cb, NULL)) {
+	PRINT("Failed to discover Devices\n");
+	}
+	else{
+	  PRINT("Discovered device\n");
+	}
+	if(!discovered){
+		return;
+	}
+    otb_mutex_unlock(app_sync_lock);
+    */
   if (oc_init_post(a_light, light_server, NULL, &post_light_response_cb, LOW_QOS, NULL)) {
     oc_rep_start_root_object();
     oc_rep_set_boolean(root, state, light_cmd);

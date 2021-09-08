@@ -883,6 +883,10 @@ for (i = 0; i < coll.length; i++) {
 	    			      if (current_uuid != other_uuid)
 	    				{
 					     var device = devices.filter(dev => dev.uuid == other_uuid);
+					      //makes sure we have a valid device
+						if (!device.length){
+							continue;
+						}
 						console.log("Dev Name: ",device);
 					      $('#access_control_device_selector_'+current_uuid).multiSelect('addOption', { value: other_uuid, text: device[0].name+": "+other_uuid });
 					      $('#credential_device_selector_'+current_uuid).multiSelect('addOption', { value: other_uuid, text: device[0].name+": "+other_uuid });

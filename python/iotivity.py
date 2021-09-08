@@ -67,6 +67,7 @@ owned_event = threading.Event()
 resource_event = threading.Event()
 diplomat_event = threading.Event()
 so_event = threading.Event()
+client_event = threading.Event()
 
 ten_spaces = "          "
 
@@ -521,6 +522,7 @@ OC_DEVICE_HANDLE._fields_ = (
 CHANGED_CALLBACK = CFUNCTYPE(None, c_char_p, c_char_p)
 DIPLOMAT_CALLBACK = CFUNCTYPE(None, c_char_p, c_char_p, c_char_p,c_char_p,c_char_p,c_char_p)
 RESOURCE_CALLBACK = CFUNCTYPE(None, c_char_p, c_char_p, c_char_p, c_char_p)
+CLIENT_CALLBACK = CFUNCTYPE(None, c_char_p, c_char_p,c_char_p)
 
 
 class Device():
@@ -587,6 +589,22 @@ class Iotivity():
                 so_event.set()
         diplomat_event.set()
         print("Diplomat CB: UUID: {}, Uri:{} State:{} Event:{} Target:{} Target Cred:{}".format(uuid,uri,state,cb_event,target,target_cred))
+
+    """ ********************************
+    Call back handles client command callbacks.
+    Client discovery/state
+    **********************************"""
+    def clientCB(self,cb_uuid,cb_state,cb_event):
+        uuid=""
+        state=""
+        event=""
+        if len(cb_uuid):
+            uuid =  cb_uuid.decode("utf-8")
+        if len(cb_state):
+            state = cb_state.decode("utf-8")
+        if cb_event is not None:
+            event = cb_event.decode("utf-8")
+        print("Command CB: UUID: {}, State:{}, Event:{}".format(uuid,state,event))
     
     """ ********************************
     Call back handles resource call backs tasks.
@@ -666,6 +684,9 @@ class Iotivity():
         
         self.diplomatCB = DIPLOMAT_CALLBACK(self.diplomatCB)
         self.lib.install_diplomatCB(self.diplomatCB)
+
+        self.clientCB = CLIENT_CALLBACK(self.clientCB)
+        self.lib.install_diplomatCB(self.clientCB)
 
         print ("...")
         self.threadid = threading.Thread(target=self.thread_function, args=())  
@@ -1000,7 +1021,7 @@ class Iotivity():
         self.lib.py_discover_resources.argtypes = [String]
         self.lib.py_discover_resourcesrestype = None
         self.lib.py_discover_resources(myuuid)
-        resource_event.wait(10)
+        resource_event.wait(15)
         ret=""
         try:
             ret = {myuuid:self.resourcelist[myuuid]}

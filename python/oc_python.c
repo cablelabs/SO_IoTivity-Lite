@@ -92,6 +92,7 @@ static int quit = 0;
 typedef void (*changedCB) (char* uuid, char* state, char* event);
 typedef void (*diplomatCB) (char* anchor, char* uri, char* state, char* event, char* target, char* target_cred);
 typedef void (*resourceCB) (char* anchor, char* uri, char* types, char* interfaces);
+typedef void (*clientCB) (char* uuid, char* state, char* event);
 
 /**
 * structure with the callback
@@ -102,6 +103,7 @@ struct py_cb_struct
     changedCB changedFCB;
     diplomatCB diplomatFCB;
     resourceCB resourceFCB;
+    clientCB clientFCB;
 };
 
 /**
@@ -109,6 +111,41 @@ struct py_cb_struct
 *
 */
 struct py_cb_struct my_CBFunctions; 
+
+/**
+ * Function to return response strings
+ *
+ */
+
+
+static inline char *stringFromResponse(int code)
+{
+    static char *strings[] = {  "STATUS_OK", 
+				  "STATUS_CREATED"
+				  "STATUS_CHANGED",
+				  "STATUS_DELETED",
+				  "STATUS_NOT_MODIFIED",
+				  "STATUS_BAD_REQUEST",
+				  "STATUS_UNAUTHORIZED",
+				  "STATUS_BAD_OPTION",
+				  "STATUS_FORBIDDEN",
+				  "STATUS_NOT_FOUND",
+				  "STATUS_METHOD_NOT_ALLOWED",
+				  "STATUS_NOT_ACCEPTABLE",
+				  "STATUS_REQUEST_ENTITY_TOO_LARGE",
+				  "STATUS_UNSUPPORTED_MEDIA_TYPE",
+				  "STATUS_INTERNAL_SERVER_ERROR",
+				  "STATUS_NOT_IMPLEMENTED",
+				  "STATUS_BAD_GATEWAY",
+				  "STATUS_SERVICE_UNAVAILABLE",
+				  "STATUS_GATEWAY_TIMEOUT",
+				  "STATUS_PROXYING_NOT_SUPPORTED",
+				  "__NUM_STATUS_CODES__",
+				  "IGNORE",
+				  "PING_TIMEOUT" };
+    return strings[code];
+}
+
 
 /**
 * function to install callbacks, called from python
@@ -135,6 +172,14 @@ void install_diplomatCB(diplomatCB diplomatCB) {
 void install_resourceCB(resourceCB resourceCB) {
    PRINT("[C]install_resourceCB\n");
    my_CBFunctions.resourceFCB = resourceCB;
+}
+/**
+* function to install client callbacks, called from python
+*
+*/
+void install_clientCB(clientCB clientCB) {
+   PRINT("[C]install_clientCB\n");
+   my_CBFunctions.clientFCB = clientCB;
 }
 
 /**
@@ -166,6 +211,18 @@ void inform_diplomat_python(const char* anchor, const char* uri, const char* sta
   PRINT("[C]inform_python %p\n",my_CBFunctions.diplomatFCB);
   if (my_CBFunctions.diplomatFCB != NULL) {
     my_CBFunctions.diplomatFCB((char*)anchor,(char*)uri,(char*)state,(char*)event,(char*)target,(char*)target_cred);
+  }
+}
+
+/**
+* function to call the callback for clients to python.
+*
+*/
+void inform_client_python(const char* uuid, const char* state, const char* event)
+{
+  PRINT("[C]inform_python %p\n",my_CBFunctions.clientFCB);
+  if (my_CBFunctions.clientFCB != NULL) {
+    my_CBFunctions.clientFCB((char*)uuid,(char*)state,(char*)event);
   }
 }
 
@@ -544,7 +601,7 @@ otm_rdp_cb(oc_uuid_t *uuid, int status, void *data)
   }
 }
 
-static void
+void
 otm_rdp(void)
 {
   if (oc_list_length(unowned_devices) == 0) {
@@ -606,7 +663,7 @@ random_pin_cb(oc_uuid_t *uuid, int status, void *data)
   }
 }
 
-static void
+void
 request_random_pin(void)
 {
   if (oc_list_length(unowned_devices) == 0) {
@@ -665,7 +722,7 @@ otm_cert_cb(oc_uuid_t *uuid, int status, void *data)
   }
 }
 
-static void
+void
 otm_cert(void)
 {
   if (oc_list_length(unowned_devices) == 0) {
@@ -801,7 +858,7 @@ void py_otm_just_works(char* uuid)
 }
 
 
-static void
+void
 otm_just_works(void)
 {
   if (oc_list_length(unowned_devices) == 0) {
@@ -925,7 +982,7 @@ retrieve_acl2_rsrc_cb(oc_sec_acl_t *acl, void *data)
   }
 }
 
-static void
+void
 retrieve_acl2_rsrc(void)
 {
   if (oc_list_length(owned_devices) == 0) {
@@ -963,7 +1020,7 @@ retrieve_acl2_rsrc(void)
   otb_mutex_unlock(app_sync_lock);
 }
 
-static void
+void
 display_cred_rsrc(oc_sec_creds_t *creds)
 {
   if (creds) {
@@ -1011,7 +1068,7 @@ retrieve_cred_rsrc_cb(oc_sec_creds_t *creds, void *data)
   }
 }
 
-static void
+void
 retrieve_own_creds(void)
 {
   otb_mutex_lock(app_sync_lock);
@@ -1023,7 +1080,7 @@ retrieve_own_creds(void)
   otb_mutex_unlock(app_sync_lock);
 }
 
-static void
+void
 retrieve_cred_rsrc(void)
 {
   if (oc_list_length(owned_devices) == 0) {
@@ -1073,7 +1130,7 @@ delete_ace_by_aceid_cb(int status, void *data)
   }
 }
 
-static void
+void
 delete_ace_by_aceid(void)
 {
   if (oc_list_length(owned_devices) == 0) {
@@ -1127,7 +1184,7 @@ delete_cred_by_credid_cb(int status, void *data)
   }
 }
 
-static void
+void
 delete_own_cred_by_credid(void)
 {
   PRINT("[C]\nEnter credid: ");
@@ -1144,7 +1201,7 @@ delete_own_cred_by_credid(void)
   otb_mutex_unlock(app_sync_lock);
 }
 
-static void
+void
 delete_cred_by_credid(void)
 {
   if (oc_list_length(owned_devices) == 0) {
@@ -1346,7 +1403,7 @@ void py_reset_device(char* uuid)
   otb_mutex_unlock(app_sync_lock);
 }
 
-static void
+void
 reset_device(void)
 {
   if (oc_list_length(owned_devices) == 0) {
@@ -1398,7 +1455,7 @@ provision_id_cert_cb(int status, void *data)
   }
 }
 
-static void
+void
 provision_id_cert(void)
 {
   if (oc_list_length(owned_devices) == 0) {
@@ -1503,7 +1560,7 @@ py_provision_role_cert(char* uuid, char* role, char* auth)
 }
 
 
-static void
+void
 provision_role_cert(void)
 {
   if (oc_list_length(owned_devices) == 0) {
@@ -1575,7 +1632,7 @@ provision_role_wildcard_ace_cb(oc_uuid_t *uuid, int status, void *data)
   }
 }
 
-static void
+void
 provision_role_wildcard_ace(void)
 {
   if (oc_list_length(owned_devices) == 0) {
@@ -1649,7 +1706,7 @@ provision_group_context_cb(oc_uuid_t *uuid, int status, void *data)
   }
 }
 
-static void
+void
 provision_server_group_oscore_context(void)
 {
   if (oc_list_length(owned_devices) == 0) {
@@ -1703,7 +1760,7 @@ provision_server_group_oscore_context(void)
   }
 }
 
-static void
+void
 provision_client_group_oscore_context(void)
 {
   if (oc_list_length(owned_devices) == 0) {
@@ -1760,7 +1817,7 @@ provision_oscore_contexts_cb(int status, void *data)
   }
 }
 
-static void
+void
 provision_oscore_contexts(void)
 {
   if (oc_list_length(owned_devices) == 0) {
@@ -1867,7 +1924,7 @@ provision_authcrypt_wildcard_ace_cb(oc_uuid_t *uuid, int status, void *data)
   }
 }
 
-static void
+void
 provision_authcrypt_wildcard_ace(void)
 {
   if (oc_list_length(owned_devices) == 0) {
@@ -2035,7 +2092,7 @@ void py_provision_ace_cloud_access(char* uuid )
   }
 }
 
-static void
+void
 provision_ace2(void)
 {
   if (oc_list_length(owned_devices) == 0) {
@@ -2238,7 +2295,7 @@ provision_ace2(void)
 }
 
 #if defined(OC_SECURITY) && defined(OC_PKI)
-static int
+int
 read_pem(const char *file_path, char *buffer, size_t *buffer_len)
 {
   FILE *fp = fopen(file_path, "r");
@@ -2280,7 +2337,7 @@ read_pem(const char *file_path, char *buffer, size_t *buffer_len)
 #endif /* OC_SECURITY && OC_PKI */
 
 #ifdef OC_PKI
-static void
+void
 install_trust_anchor(void)
 {
   char cert[8192];
@@ -2314,7 +2371,7 @@ install_trust_anchor(void)
 }
 #endif /* OC_PKI */
 
-static void
+void
 set_sd_info()
 {
   char name[64] = { 0 };
@@ -2328,7 +2385,7 @@ set_sd_info()
 
 #ifdef OC_CLOUD
 
-static void
+void
 post_response_cloud_config(oc_client_response_t* data)
 {
   PRINT("[C]post_response_cloud_config:\n");
@@ -2345,7 +2402,7 @@ post_response_cloud_config(oc_client_response_t* data)
 }
 
 
-static void
+void
 set_cloud_info(void)
 {
   char url[64] = "/CoapCloudConfResURI";  // url of the coap cloud config url
@@ -2413,7 +2470,7 @@ set_cloud_info(void)
 }
 
 
-static void
+void
 get_cloud_info(void)
 {
   char di[OC_UUID_LEN];
@@ -2478,7 +2535,7 @@ void trustanchorcb(int status, void* data)
 }
 
 
-static void
+void
 set_cloud_trust_anchor(void)
 {
   char di[OC_UUID_LEN];
@@ -2713,7 +2770,7 @@ void py_discover_resources(char* uuid)
 }
 
 
-static void
+void
 discover_resources(void)
 {
   if (oc_list_length(unowned_devices) == 0 &&
@@ -2957,7 +3014,7 @@ diplomat_discovery(const char *anchor, const char *uri, oc_string_array_t types,
   return OC_CONTINUE_DISCOVERY;
 }
 
-static void
+void
 discover_diplomat_for_observe(void)
 {
   otb_mutex_lock(app_sync_lock);
@@ -3002,53 +3059,6 @@ static int power;
 static oc_string_t name;
 static bool discovered;
 
-/*
-static void
-post_light(oc_client_response_t *data)
-{
-  PRINT("POST_light:\n");
-  if (data->code == OC_STATUS_CHANGED)
-    PRINT("POST response: CHANGED\n");
-  else if (data->code == OC_STATUS_CREATED)
-    PRINT("POST response: CREATED\n");
-  else
-    PRINT("POST response code %d\n", data->code);
-
-  if (oc_init_post(a_light, light_server, NULL, NULL, LOW_QOS, NULL)) {
-    oc_rep_start_root_object();
-    oc_rep_set_boolean(root, state, true);
-    oc_rep_set_int(root, power, 55);
-    oc_rep_end_root_object();
-    if (oc_do_post())
-      PRINT("Sent POST request\n");
-    else
-      PRINT("Could not send POST request\n");
-  } else
-    PRINT("Could not init POST request\n");
-}
-static void
-put_light(oc_client_response_t *data)
-{
-  PRINT("PUT_light:\n");
-
-  if (data->code == OC_STATUS_CHANGED)
-    PRINT("PUT response: CHANGED\n");
-  else
-    PRINT("PUT response code %d\n", data->code);
-
-  if (oc_init_post(a_light, light_server, NULL, &post_light, LOW_QOS, NULL)) {
-    oc_rep_start_root_object();
-    oc_rep_set_boolean(root, state, false);
-    oc_rep_set_int(root, power, 105);
-    oc_rep_end_root_object();
-    if (oc_do_post())
-      PRINT("Sent POST request\n");
-    else
-      PRINT("Could not send POST request\n");
-  } else
-    PRINT("Could not init POST request\n");
-}
-    */
 
 static void
 post_light_response_cb(oc_client_response_t *data)
@@ -3061,10 +3071,18 @@ post_light_response_cb(oc_client_response_t *data)
 }
 
 static void
-get_light(oc_client_response_t *data)
+get_light_cb(oc_client_response_t *data)
 {
   PRINT("GET_light:\n");
   oc_rep_t *rep = data->payload;
+  
+  if (data->code > 4) {
+    PRINT("GET failed with code %d\n", data->code);
+    //char* c = (char *) data->code;
+    char code[40];
+    snprintf(code,sizeof(code),"observe_fail:%d",data->code);
+    return;
+  }
   while (rep != NULL) {
     PRINT("key %s, value ", oc_string(rep->name));
     switch (rep->type) {
@@ -3115,7 +3133,6 @@ discovery_cb(const char *anchor, const char *uri, oc_string_array_t types,
         ep = ep->next;
       }
 
-	//oc_do_get(a_light, light_server, NULL, &get_light, LOW_QOS, NULL);
 
       return OC_STOP_DISCOVERY;
     }
@@ -3127,7 +3144,7 @@ void
 discover_light(void)
 {
   oc_do_ip_discovery("core.light", &discovery_cb, NULL);
-  oc_do_get(a_light, light_server, NULL, &get_light, LOW_QOS, NULL);
+  oc_do_get(a_light, light_server, NULL, &get_light_cb, LOW_QOS, NULL);
 }
 
 void
@@ -3231,145 +3248,9 @@ python_main(void)
   display_device_uuid();
 
 
-  int c;
   while (quit != 1) {
     sleep(5);
   }  
-
-
-  //int c;
-  while (quit != 1) {
-    // SCANF("%d", &c);
-    c = 99;
-    c = 0;
-    switch (c) {
-    case 0:
-      continue;
-      break;
-    case 1:
-      discover_unowned_devices(0x02);
-      break;
-    case 2:
-      discover_unowned_devices(0x03);
-      break;
-    case 3:
-      discover_unowned_devices(0x05);
-      break;
-    case 4:
-      discover_owned_devices(0x02);
-      break;
-    case 5:
-      discover_owned_devices(0x03);
-      break;
-    case 6:
-      discover_owned_devices(0x05);
-      break;
-    case 7:
-      discover_resources();
-      break;
-    case 8:
-      otm_just_works();
-      break;
-    case 9:
-      request_random_pin();
-      break;
-    case 10:
-      otm_rdp();
-      break;
-#ifdef OC_PKI
-    case 11:
-      otm_cert();
-      break;
-#endif 
-    case 12:
-      //provision_credentials(uuid1,uuid2);
-      break;
-    case 13:
-      provision_ace2();
-      break;
-    case 14:
-      provision_authcrypt_wildcard_ace();
-      break;
-    case 15:
-      retrieve_cred_rsrc();
-      break;
-    case 16:
-      delete_cred_by_credid();
-      break;
-    case 17:
-      retrieve_acl2_rsrc();
-      break;
-    case 18:
-      delete_ace_by_aceid();
-      break;
-    case 19:
-      retrieve_own_creds();
-      break;
-    case 20:
-      delete_own_cred_by_credid();
-      break;
-#ifdef OC_PKI
-    case 21:
-      provision_role_wildcard_ace();
-      break;
-    case 22:
-      provision_id_cert();
-      break;
-    case 23:
-      provision_role_cert();
-      break;
-#endif
-#ifdef OC_OSCORE
-    case 24:
-      provision_oscore_contexts();
-      break;
-    case 25:
-      provision_client_group_oscore_context();
-      break;
-    case 26:
-      provision_server_group_oscore_context();
-      break;
-#endif 
-    case 27:
-      set_sd_info();
-      break;
-#ifdef OC_CLOUD
-    case 30:
-      set_cloud_info();
-      break;
-  case 31:
-      get_cloud_info();
-      break;
-  case 32:
-    set_cloud_trust_anchor();
-    break;
-#endif 
-#ifdef OC_SO
-  case 41:
-    discover_diplomat_for_observe();
-    break;
-#endif /* OC_SO */
-
-#ifdef OC_PKI
-    case 96:
-      install_trust_anchor();
-      break;
-#endif 
-    case 97:
-      reset_device();
-      break;
-    case 98:
-      otb_mutex_lock(app_sync_lock);
-      oc_reset();
-      otb_mutex_unlock(app_sync_lock);
-      break;
-    case 99:
-      python_exit(0);
-      break;
-    default:
-      break;
-    }
-  }
 
 #if defined(_WIN32)
   WaitForSingleObject(event_thread, INFINITE);

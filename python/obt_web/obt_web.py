@@ -144,7 +144,9 @@ def get_obt_uuid():
     print(uuid)
     socketio.emit('obt_uuid',to_json({"uuid":uuid}))
 
-
+@socketio.on('disocnnect')
+def send_disconnect():
+    print("diconnected")
 
 #@socketio.event
 #def connect():

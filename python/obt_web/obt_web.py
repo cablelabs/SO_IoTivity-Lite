@@ -134,9 +134,9 @@ def diplomat_set_observe(state):
     socketio.emit('diplomat_state',to_json(diplomat))
 
 @socketio.on('send_command')
-def send_command(uuid,command,resource,value):
-    #print("Device:{},Command:{}".format(uuid,command))
-    ret = my_iotivity.client_command(uuid,command,resource,value)
+def send_command(uuid,device_type,command,resource,value):
+    #print("Device:{},Device Type:{},Command:{},Resource:{},Value:{}".format(uuid,device_type,command,resource,value))
+    ret = my_iotivity.client_command(uuid,device_type,command,resource,value)
 
 @socketio.on('get_obt_uuid')
 def get_obt_uuid():
@@ -170,7 +170,7 @@ if __name__ == '__main__':
     #run in seperate thread
     #threading.Thread(target=app.run(host='0.0.0.0',ssl_context=('cert.pem','key.pem'))).start()
     #Secure Self-signed (required for camera) See README for cert
-    socketio.run(app, host='0.0.0.0',debug=False,use_reloader=False,ssl_context=('cert.pem', 'key.pem'))
+    socketio.run(app, host='0.0.0.0',debug=False,use_reloader=True,ssl_context=('cert.pem', 'key.pem'))
 
 
 

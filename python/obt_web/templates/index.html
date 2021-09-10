@@ -675,7 +675,7 @@ for (i = 0; i < coll.length; i++) {
 	}
 
 	/*Handle command from basic client*/
-	function send_command(obj,resource,cmd){
+	function send_command(obj,type,cmd,resource){
 		var obj_array = obj.id.split('_');
 		uuid = obj_array[1];
 		state = obj.checked
@@ -684,8 +684,8 @@ for (i = 0; i < coll.length; i++) {
 		}else{
 			state=0;
 		}
-		console.log(uuid,state);
-		socket.emit("send_command",uuid,resource,cmd,state);
+		console.log(uuid,state,type,resource);
+		socket.emit("send_command",uuid,type,cmd,resource,state);
 	}
 
 

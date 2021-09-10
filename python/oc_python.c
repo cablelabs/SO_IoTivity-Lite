@@ -3069,7 +3069,6 @@ post_light_response_cb(oc_client_response_t *data)
   //external_cb(&my_state);
   //my_state.error_state = false;
 }
-
 static void
 get_light_cb(oc_client_response_t *data)
 {
@@ -3141,10 +3140,12 @@ discovery_cb(const char *anchor, const char *uri, oc_string_array_t types,
 }
 
 void
-discover_light(void)
+discover_resource(char *rt, char* uuid)
 {
-  oc_do_ip_discovery("core.light", &discovery_cb, NULL);
+  PRINT("[C] rt:%s uuid:%s\n",rt,uuid);
+  oc_do_ip_discovery(rt, &discovery_cb, NULL);
   oc_do_get(a_light, light_server, NULL, &get_light_cb, LOW_QOS, NULL);
+  PRINT("[C] rt:%s uuid:%s\n",rt,uuid);
 }
 
 void

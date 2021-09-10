@@ -615,12 +615,6 @@ class Iotivity():
         uuid_new = copy.deepcopy(uuid)
         my_uri = str(uri)[2:-1]
 
-        #Look for zero length uri...this means discovery is complete
-        if len(my_uri) <=0:
-            resource_event.set()
-            print("ALL resources gathered");
-            print(colored("Resources {}",'yellow').format(self.resourcelist))
-            return
  
         print(colored("          Resource Event          \n",'green',attrs=['underline']))
         print(colored("UUID:{}, \nURI:{}",'green').format(uuid_new,my_uri))
@@ -647,6 +641,13 @@ class Iotivity():
                 self.resourcelist[uuid_new] = mylist
         if 'resources' in self.debug:
             print(colored(" -----resourcelist {}",'cyan').format(mylist))
+
+        #Look for zero length uri...this means discovery is complete
+        if len(my_uri) <=0:
+            resource_event.set()
+            print("ALL resources gathered");
+            print(colored("Resources {}",'yellow').format(self.resourcelist))
+            return
 
 
     def __init__(self,debug=None):
@@ -1050,17 +1051,22 @@ class Iotivity():
                     print ("    ", value)  
         
 
-    def client_command(self,uuid,command,resource,value):
-        print(colored(20*" "+"Client Command->Target:{}-->Res:{}-->Cmd:{}-->Val:{}"+20*" ",'yellow',attrs=['underline']).format(uuid,command,resource,value))
-        #self.lib.py_post.argtypes = [String]
-        #self.lib.py_post.restype = None
-        #self.lib.py_post(uuid,command)
-        self.lib.discover_light()
-        time.sleep(1)
-        self.lib.change_light.argtypes = [c_int]
-        self.lib.change_light.restype = None
-        self.lib.change_light(value)
-        return "ok"
+    def client_command(self,uuid,device_type,command,resource,value):
+        if len(uuid) and len(resource):
+            print(colored(20*" "+"Client Command->Target:{}-->Type:{}-->Res:{}-->Cmd:{}-->Val:{}"+20*" ",'yellow',attrs=['underline']).format(uuid,device_type,resource,command,value))
+            #self.lib.py_post.argtypes = [String]
+            #self.lib.py_post.restype = None
+            #self.lib.py_post(uuid,command)
+            self.lib.discover_resource.argtypes = [String,String]
+            self.lib.discover_resource.restype = None
+            self.lib.discover_resource(resource,uuid)
+            time.sleep(1)
+            self.lib.change_light.argtypes = [c_int]
+            self.lib.change_light.restype = None
+            self.lib.change_light(value)
+            return "ok"
+        else:
+            return "error"
 
 
 

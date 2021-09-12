@@ -16,6 +16,12 @@
     <meta http-equiv="Expires" content="0" />
   </head>
   <body>
+	<div id="connect_container" >
+		<div id="connect_text">
+		The connection to the server has been lost.	
+		</div>
+		<div id="connect_layer"></div>
+	</div>
 	  <div class='wrapper'>
 <header>
 	<img src="include/images/ocf-logo.png" >
@@ -109,7 +115,7 @@ var about_dialog;
       }
     });
 }); 
-/*Connected Dialog*/
+/*Connected Dialog
 var connect_dialog;
       $( function(){
   about_dialog = $( "#connect_container" ).dialog({
@@ -128,7 +134,7 @@ var connect_dialog;
         }
       }
     });
-}); 
+});*/ 
 /*====================End Jquery=======================*/
 
 
@@ -164,11 +170,13 @@ function showAbout()
 }
 function showConnect()
 {
-	$("#connect_container").dialog("open");
+	//$("#connect_container").dialog("open");
+	$("#connect_container").show();
 }
 function hideConnect()
 {
-	$("#connect_container").dialog("close");
+	//$("#connect_container").dialog("close");
+	$("#connect_container").hide();
 }
 function openDeviceDialog(device)
 {
@@ -339,10 +347,6 @@ function credentials_check(element,uuid){
 	</div>
 	<div id="help_container" title="Help"></div>
 	<div id="about_container" title="About"></div>
-	<div id="connect_container" title="Check Connection">
-		The connection to the server has been lost.	
-		<div id="bkg"></div>
-	</div>
 <button type="button" class="collapsible">Unowned Devices</button>
   <div class="content" id="unowned_devices" style="max-height:100%">
   </div>

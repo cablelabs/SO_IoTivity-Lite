@@ -76,6 +76,7 @@ def handle_event(data):
     socketio.emit('device_discovery',to_json(devices_array))
     for device in devices_array:
         resources_array = my_iotivity.discover_resources(device.uuid)
+        #my_iotivity.get_doxm(device.uuid)
         socketio.emit('resource_discovery',to_json(resources_array))
 
 

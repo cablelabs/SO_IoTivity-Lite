@@ -745,6 +745,12 @@ class Iotivity():
                 contains = True
         return contains 
 
+    def get_device(self,uuid):
+        ret = None
+        for index, device in enumerate(self.device_array):
+            if device.uuid == uuid:
+                ret = device
+        return ret 
 
     def return_devices_array(self):
         return self.device_array
@@ -1049,6 +1055,16 @@ class Iotivity():
                 print(" uuid in list", l_uuid)
                 if l_uuid == myuuid:
                     print ("    ", value)  
+
+
+    def get_doxm(self,uuid):
+            device = self.get_device(uuid)
+            if device:
+                print(device.uuid, device.owned_state)
+            #self.lib.discover_doxm.argtypes = [String]
+            #self.lib.discover_doxm.restype = None
+            self.lib.discover_doxm()
+
         
 
     def client_command(self,uuid,device_type,command,resource,value):

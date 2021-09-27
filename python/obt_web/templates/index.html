@@ -37,6 +37,8 @@
       <script>
 /* Jquery Function*/
 $(document).ready(function() {
+  hideConnect();
+  initialize_qr_scanner();
   $('#dpp_qrcod').val('');
   $('#menubar').menu();
   
@@ -150,6 +152,7 @@ var connect_dialog;
       var obt_uuid="";
       var diplomat;
       let devices = [];
+      var html5QrcodeScanner;
       /*device object  {uuid:"uuid",name:"name",owned_state:"bool",oxms:oxm_array[],resources:resource_array[]*/
 /*===================GLobals============================*/
 
@@ -175,7 +178,6 @@ function showConnect()
 }
 function hideConnect()
 {
-	//$("#connect_container").dialog("close");
 	$("#connect_container").hide();
 }
 function openDeviceDialog(device)
@@ -233,6 +235,37 @@ function formatUUID(s)
 
 
 /*=============QR and DPP=========================*/
+
+function initialize_qr_scanner()
+{
+	var results = document.getElementById('dpp_qrcode');
+	results.value="";
+
+	html5QrcodeScanner = new Html5QrcodeScanner(
+	    "qr-reader", { fps: 10, qrbox: 250 });
+	html5QrcodeScanner.render(onScanSuccess);
+
+	var coll = document.getElementsByClassName("collapsible");
+	var i;
+
+	for (i = 0; i < coll.length; i++) {
+	  coll[i].addEventListener("click", function() {
+	    this.classList.toggle("active");
+	    var content = this.nextElementSibling;
+	    if (content.style.maxHeight){
+	      content.style.maxHeight = null;
+	    } else {
+	      content.style.maxHeight = content.scrollHeight + "px";
+	    } 
+	  });
+	}
+}
+
+function reset_qr_scanner(){
+	html5QrcodeScanner.render(onScanSuccess);
+}
+
+
 function submit_dpp()
 {
 	dpp = $("#dpp_qrcode").val();
@@ -260,7 +293,7 @@ function onScanSuccess(decodedText, decodedResult) {
         console.log(`Scan result ${decodedText}`, decodedResult);
 	var results = document.getElementById('dpp_qrcode');
 	results.value=decodedText;
-	$('#qr-reader-results-container').show();
+	//$('#qr-reader-results-container').show();
     }
 }
 /*=============QR and DPP=========================*/
@@ -337,12 +370,14 @@ function credentials_check(element,uuid){
 	</div>
         <div id="qr-container">
 		<div id="qr-reader" style="width:500px"></div>
-		<div id="qr-reader-results-container" style='display:none'>
+		<div id="qr-reader-results-container" style=''>
+			Or Copy and Past DPP String:
 			<form id="qr-reader-results">
 				<textarea  id="dpp_qrcode"i cols="55", rows="3">
 				</textarea>
 			</form>
 			<button class="ui-button ui-widget ui-corner-all" style="float:right" onClick="submit_dpp()">Onboard</button>
+			<button class="ui-button ui-widget ui-corner-all" style="float:right" onClick="reset_qr_scanner()">Rescan</button>
 		</div>
 	</div>
 	<div id="help_container" title="Help"></div>
@@ -360,24 +395,6 @@ function credentials_check(element,uuid){
 
 
 
-var html5QrcodeScanner = new Html5QrcodeScanner(
-    "qr-reader", { fps: 10, qrbox: 250 });
-html5QrcodeScanner.render(onScanSuccess);
-
-var coll = document.getElementsByClassName("collapsible");
-var i;
-
-for (i = 0; i < coll.length; i++) {
-  coll[i].addEventListener("click", function() {
-    this.classList.toggle("active");
-    var content = this.nextElementSibling;
-    if (content.style.maxHeight){
-      content.style.maxHeight = null;
-    } else {
-      content.style.maxHeight = content.scrollHeight + "px";
-    } 
-  });
-}
 
     </script>
 

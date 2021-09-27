@@ -2912,7 +2912,7 @@ perform_streamlined_discovery(oc_so_info_t *so_info)
     memcpy(cred, so_info->cred, strlen(so_info->cred));
     PRINT("After Memcopy\n");
 
-    struct timespec onboarding_wait = { .tv_sec = 8, .tv_nsec = 0 };
+    struct timespec onboarding_wait = { .tv_sec = 20, .tv_nsec = 0 };
     PRINT("AFTER TIMESPEC\n");
     nanosleep(&onboarding_wait, &onboarding_wait);
     PRINT("AFTER SLEEP\n");
@@ -3137,6 +3137,58 @@ discovery_cb(const char *anchor, const char *uri, oc_string_array_t types,
     }
   }
   return OC_CONTINUE_DISCOVERY;
+}
+
+
+static oc_discovery_flags_t
+doxm_discovery_cb(const char *anchor, const char *uri, oc_string_array_t types,
+          oc_interface_mask_t iface_mask, oc_endpoint_t *endpoint,
+          oc_resource_properties_t bm, void *user_data)
+{
+
+  (void)anchor;
+  (void)iface_mask;
+  (void)bm;
+  (void)user_data;
+  (void)types;
+  (void)endpoint;
+  int uri_len = strlen(uri);
+  uri_len = (uri_len >= MAX_URI_LENGTH) ? MAX_URI_LENGTH - 1 : uri_len;
+  PRINT("DOXM CB\n");
+      oc_endpoint_t *ep = endpoint;
+      while (ep != NULL) {
+        PRINTipaddr(*ep);
+        PRINT("\n");
+        ep = ep->next;
+      }
+  /*
+  if (oc_rep_get_int_array(data->payload, "oxms", &oxms, &oxms_len)) {
+    size_t i;
+    for (i = 0; i < oxms_len; i++) {
+     PRINT("[C] %d \n",oxms[i]);
+    }
+  }
+  */
+  return OC_STOP_DISCOVERY;
+}
+
+
+
+void 
+discover_doxm( void )
+{
+  otb_mutex_lock(app_sync_lock);
+  if (!oc_do_ip_discovery("oic.r.doxm", &doxm_discovery_cb, NULL)) {
+    PRINT("Failed to discover DOXM\n");
+  }
+  otb_mutex_unlock(app_sync_lock);
+
+  /*
+  PRINT("[C] Discover Doxm %s\n",uuid);	
+  if (oc_do_get("/oic/sec/doxm", ep, NULL, &doxm_discovery_cb, HIGH_QOS, NULL)) {
+	  PRINT("[C] doxm return\n");
+  }
+  */
 }
 
 void

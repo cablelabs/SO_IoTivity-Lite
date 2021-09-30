@@ -458,13 +458,7 @@ function credentials_check(element,uuid){
 		    var statusContainer = document.createElement("div");
 			    statusContainer.setAttribute('class','w3-container w3-white');
 			    statusContainer.setAttribute('style','margin:2px;font-size:12px;padding:2px;width:98%;position:absolute;left:0;bottom:0;opacity:0.6');
-			    statusContainer.setAttribute('id','status_container_'+uuid)
-			    var statusTxt = document.createElement("div");
-				statusTxt.setAttribute('id','statusTxt_'+uuid);
-				statusTxt.setAttribute('style','margin:5px;float:left');
-		    		//console.log("#statusTxt_"+uuid);
-				    //statusTxt.innerHTML = "<b>"+capitalize(ownedState)+"<br> Device</b>";
-			    statusContainer.append(statusTxt);
+			    statusContainer.setAttribute('id','status_container_'+uuid);
 	      		    var button = document.createElement("div");
 				button.setAttribute('id','statusbutton_'+uuid);
 				button.setAttribute('onclick','onboardDevice("'+uuid+'")');
@@ -473,7 +467,6 @@ function credentials_check(element,uuid){
 				button.setAttribute('style','margin:2px;float:right;font-size:20px;opacity:1');
 	      		    statusContainer.append(button);
 		   imageContainer.append(statusContainer);
-
 	      card.append(label);
 	      card.append(imageContainer);
 	      }//////////End Unowned State
@@ -717,6 +710,28 @@ function credentials_check(element,uuid){
 
 	}
 
+	/*Update Select on device for DOXM types*/
+	function updateDeviceDOXMSelect(uuid){
+		console.log("doxm select" +uuid);
+		var statusContainer = $("#status_container_"+uuid);
+	        var doxmSelector = document.createElement("select");
+	        doxmSelector.setAttribute('id','doxm_selector_'+uuid);
+	        doxmSelector.setAttribute('name','doxm_selector_'+uuid);
+		doxmSelector.setAttribute('style','margin:5px');
+		doxmDictionary = {
+			'justworks': 'Just Works',
+			'randompin': 'Random PIN',
+			'mfgcert': 'Mfgr. Cert.'
+		}
+		$.each(doxmDictionary, function(val,text){
+			console.log(text);
+			  var option = document.createElement("option");
+			  option.text = text;
+			  option.value = val;
+			  doxmSelector.add(option);
+		});
+	        statusContainer.append(doxmSelector);
+	}
 
 	/*Turn on SO...Obeserve DPP*/
 	function observe_diplomat(obj){
@@ -845,6 +860,7 @@ function credentials_check(element,uuid){
 				    unowned_devices_stack.push(discovery[key].uuid);
 				    newDevice = buildDevice(discovery[key]);
 				    addDevice('unowned_devices',newDevice);
+				    updateDeviceDOXMSelect(discovery[key].uuid);
 			    }
 		    }
 	       console.log(devices);

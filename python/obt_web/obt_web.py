@@ -80,15 +80,15 @@ def handle_event(data):
         socketio.emit('resource_discovery',to_json(resources_array))
 
 
-@socketio.on('discover_resources')
-def handle_event(data):
-    print("Discover Resources Device :{}".format(data));
-    owned_devices_resourcelist = my_iotivity.discover_resources(data)
-    print("OBT Resources: {}".format(owned_devices_resourcelist))
-    time.sleep(1);
-    owned_devices_resourcelist = my_iotivity.discover_resources(data)
-    print("OBT Resources: {}".format(owned_devices_resourcelist))
-    #socketio.emit('owned',json.dumps(owned_devices_bytelist))
+#@socketio.on('discover_resources')
+#def handle_event(data):
+#    print("Discover Resources Device :{}".format(data));
+#    owned_devices_resourcelist = my_iotivity.discover_resources(data)
+#    print("OBT Resources: {}".format(owned_devices_resourcelist))
+#    time.sleep(1);
+#    owned_devices_resourcelist = my_iotivity.discover_resources(data)
+#    print("OBT Resources: {}".format(owned_devices_resourcelist))
+#    #socketio.emit('owned',json.dumps(owned_devices_bytelist))
 
 @socketio.on('onboard_device')
 def handle_onboard(data):
@@ -165,7 +165,8 @@ if __name__ == '__main__':
     wpa.attach()
 
 
-    debug = ['resources']
+    #debug = ['resources']
+    debug = []
     my_iotivity = Iotivity(debug=debug)
     signal.signal(signal.SIGINT, my_iotivity.sig_handler)
     #Insecure

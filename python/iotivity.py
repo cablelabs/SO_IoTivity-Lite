@@ -68,6 +68,7 @@ resource_event = threading.Event()
 diplomat_event = threading.Event()
 so_event = threading.Event()
 client_event = threading.Event()
+resource_mutex = threading.Lock()
 
 ten_spaces = "          "
 
@@ -647,11 +648,11 @@ class Iotivity():
             resource_event.set()
             print("ALL resources gathered");
             print(colored("Resources {}",'yellow').format(self.resourcelist))
-            return
 
 
     def __init__(self,debug=None):
         print ("loading ...")
+        resource_mutex.acquire()
         libname = 'libiotivity-lite-client-python.so'
         libdir = os.path.dirname(__file__) 
         self.lib=ctl.load_library(libname, libdir)
@@ -1024,16 +1025,24 @@ class Iotivity():
         self.lib.py_provision_role_cert(uuid, role, auth)
 
     def discover_resources(self, myuuid):
+        print("Discover Resources: {}".format(myuuid))
         resource_event.clear()
         self.lib.py_discover_resources.argtypes = [String]
         self.lib.py_discover_resourcesrestype = None
         self.lib.py_discover_resources(myuuid)
-        resource_event.wait(15)
+        resource_event.wait(20)
         ret=""
+        count = 0
+        print("Entering Wait {}".format(myuuid))
+        while not myuuid in self.resourcelist:
+            time.sleep(1)
+            count = count + 1
+            print("Waiting for resources: {}".format(count))
         try:
             ret = {myuuid:self.resourcelist[myuuid]}
-        except:
-            self.discover_resources(myuuid)
+        except Exception as e:
+            print("Exception: {} Re-trying resource discovery".format(e))
+        print("RET:{}".format(ret))
         return ret 
 
     def get_idd(self, myuuid):

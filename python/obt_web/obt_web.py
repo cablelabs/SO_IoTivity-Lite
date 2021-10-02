@@ -80,27 +80,16 @@ def handle_event(data):
         socketio.emit('resource_discovery',to_json(resources_array))
 
 
-#@socketio.on('discover_resources')
-#def handle_event(data):
-#    print("Discover Resources Device :{}".format(data));
-#    owned_devices_resourcelist = my_iotivity.discover_resources(data)
-#    print("OBT Resources: {}".format(owned_devices_resourcelist))
-#    time.sleep(1);
-#    owned_devices_resourcelist = my_iotivity.discover_resources(data)
-#    print("OBT Resources: {}".format(owned_devices_resourcelist))
-#    #socketio.emit('owned',json.dumps(owned_devices_bytelist))
-
 @socketio.on('onboard_device')
 def handle_onboard(data):
     print("Onboard Device:{}".format(data))
-    onboard_device = my_iotivity.onboard_device(data)
-    print("OBT: {}".format(onboard_device))
+    device = json.loads(data, object_hook=lambda d: SimpleNamespace(**d))
+    onboard_device = my_iotivity.onboard_device(device)
 
 @socketio.on('offboard_device')
 def handle_offonboard(data):
     print("Offboard Device:{}".format(data))
     onboard_device = my_iotivity.offboard_device(data)
-    print("OBT: {}".format(onboard_device))
 
 @socketio.on('provision_credentials')
 def handle_pairwise(data):

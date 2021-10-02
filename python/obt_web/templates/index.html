@@ -381,7 +381,11 @@ function credentials_check(element,uuid){
 		</div>
 	</div>
 	<div id="help_container" title="Help"></div>
-	<div id="about_container" title="About"></div>
+	<div id="about_container" title="About">
+		Icons from:
+		https://icons8.com/license
+	
+	</div>
 <button type="button" class="collapsible">Unowned Devices</button>
   <div class="content" id="unowned_devices" style="max-height:100%">
   </div>
@@ -992,7 +996,11 @@ function credentials_check(element,uuid){
 		//keep track of owned uuid for later deletion from unowned 
 		unowned_delete_stack.push(uuid); 
 		showWait('statusbutton_'+uuid);
-		socket.emit("onboard_device",uuid);
+		otm = $("#doxm_selector_"+uuid).val();
+		var otm_device = new Object();
+		otm_device.uuid = uuid;
+		otm_device.otm = otm;
+		socket.emit("onboard_device",JSON.stringify(otm_device));
 		discover_devices();
 	}
 	

@@ -617,8 +617,9 @@ class Iotivity():
         my_uri = str(uri)[2:-1]
 
  
-        print(colored("          Resource Event          \n",'green',attrs=['underline']))
-        print(colored("UUID:{}, \nURI:{}",'green').format(uuid_new,my_uri))
+        if 'resources' in self.debug:
+            print(colored("          Resource Event          \n",'green',attrs=['underline']))
+            print(colored("UUID:{}, \nURI:{}",'green').format(uuid_new,my_uri))
         my_str = str(myjson)[2:-1]
         my_str = json.loads(my_str)
         
@@ -647,6 +648,7 @@ class Iotivity():
         if len(my_uri) <=0:
             resource_event.set()
             print("ALL resources gathered");
+        if 'resources' in self.debug:
             print(colored("Resources {}",'yellow').format(self.resourcelist))
 
 
@@ -948,16 +950,17 @@ class Iotivity():
 
     def onboard_device(self,device):
         print("Onboarding device: {}".format(device))
+        #if device.otm == "justworks":
         self.lib.py_otm_just_works.argtypes = [String]
         self.lib.py_otm_just_works.restype = None
-        self.lib.py_otm_just_works(device)
+        self.lib.py_otm_just_works(device.uuid)
 
         #remove unowned uuid form resource list
         for key in self.resourcelist.keys():
-            if key == device:
-                del self.resourcelist[device]
+            if key == device.uuid:
+                del self.resourcelist[device.uuid]
                 break
-        self.purge_device_array(device)
+        self.purge_device_array(device.uuid)
 
     def offboard_device(self,device):
         print ("offboard device :", device)
@@ -1037,7 +1040,9 @@ class Iotivity():
         while not myuuid in self.resourcelist:
             time.sleep(1)
             count = count + 1
-            print("Waiting for resources: {}".format(count))
+            print("Waiting for resources: {}--{}".format(myuuid,count))
+            if count >= 40:
+                return ret
         try:
             ret = {myuuid:self.resourcelist[myuuid]}
         except Exception as e:

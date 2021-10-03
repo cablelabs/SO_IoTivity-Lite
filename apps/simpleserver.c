@@ -30,6 +30,14 @@ static bool state = false;
 int power;
 oc_string_t name;
 
+void
+random_pin_cb(const unsigned char *pin, size_t pin_len, void *data)
+{
+  (void)data;
+  PRINT("\n\nRandom PIN: %.*s\n\n", (int)pin_len, pin);
+}
+
+
 static int
 app_init(void)
 {
@@ -158,6 +166,7 @@ main(void)
 #ifdef OC_STORAGE
   oc_storage_config("./simpleserver_creds");
 #endif /* OC_STORAGE */
+   oc_set_random_pin_callback(random_pin_cb, NULL);
 
   init = oc_main_init(&handler);
   if (init < 0)

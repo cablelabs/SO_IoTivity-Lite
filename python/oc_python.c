@@ -703,6 +703,42 @@ request_random_pin(void)
   otb_mutex_unlock(app_sync_lock);
 }
 
+	
+void
+py_request_random_pin(char* uuid)
+{
+  device_handle_t *device = (device_handle_t *)oc_list_head(unowned_devices);
+  device_handle_t *devices[MAX_NUM_DEVICES];
+  int i = 0, c=-1;
+
+  while (device != NULL) {
+    char di[OC_UUID_LEN];
+    oc_uuid_to_str(&device->uuid, di, OC_UUID_LEN);
+    devices[i] = device;
+    if (strcmp(uuid, di) == 0) {
+      c = i;
+    }
+    i++;
+    device = device->next;
+  }
+  if (c == -1)
+  {
+    PRINT("[C] ERROR: Invalid uuid\n");
+    return;
+  }
+
+  otb_mutex_lock(app_sync_lock);
+
+  int ret = oc_obt_request_random_pin(&devices[c]->uuid, random_pin_cb, NULL);
+  if (ret >= 0) {
+    PRINT("[C]\nSuccessfully issued request to generate a random PIN\n");
+  } else {
+    PRINT("[C]\nERROR issuing request to generate random PIN\n");
+  }
+
+  otb_mutex_unlock(app_sync_lock);
+}
+
 #ifdef OC_PKI
 static void
 otm_cert_cb(oc_uuid_t *uuid, int status, void *data)

@@ -950,10 +950,14 @@ class Iotivity():
 
     def onboard_device(self,device):
         print("Onboarding device: {}".format(device))
-        #if device.otm == "justworks":
-        self.lib.py_otm_just_works.argtypes = [String]
-        self.lib.py_otm_just_works.restype = None
-        self.lib.py_otm_just_works(device.uuid)
+        if device.otm == "justworks":
+            self.lib.py_otm_just_works.argtypes = [String]
+            self.lib.py_otm_just_works.restype = None
+            self.lib.py_otm_just_works(device.uuid)
+        if device.otm == "randompin":
+            self.lib.py_request_random_pin.argtypes = [String]
+            self.lib.py_request_random_pin.restype = None
+            self.lib.py_request_random_pin(device.uuid)
 
         #remove unowned uuid form resource list
         for key in self.resourcelist.keys():

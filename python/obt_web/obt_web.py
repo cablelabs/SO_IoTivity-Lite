@@ -69,12 +69,16 @@ Discover unowned, owned then resources
 @socketio.on('discover_devices')
 def handle_event(data):
     #print("Discover Unowned Devices"+data);
-    devices_array = my_iotivity.discover_unowned()
-    socketio.emit('device_discovery',to_json(devices_array))
+    unowned_devices_array = my_iotivity.discover_unowned()
+    socketio.emit('device_discovery',to_json(unowned_devices_array))
+    for device in unowned_devices_array:
+        resources_array = my_iotivity.discover_resources(device.uuid)
+        #my_iotivity.get_doxm(device.uuid)
+        socketio.emit('resource_discovery',to_json(resources_array))
     #print("Discover Owned Devices X"+data);
-    devices_array = my_iotivity.discover_owned()
-    socketio.emit('device_discovery',to_json(devices_array))
-    for device in devices_array:
+    owned_devices_array = my_iotivity.discover_owned()
+    socketio.emit('device_discovery',to_json(owned_devices_array))
+    for device in owned_devices_array:
         resources_array = my_iotivity.discover_resources(device.uuid)
         #my_iotivity.get_doxm(device.uuid)
         socketio.emit('resource_discovery',to_json(resources_array))

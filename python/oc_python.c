@@ -658,8 +658,10 @@ random_pin_cb(oc_uuid_t *uuid, int status, void *data)
 
   if (status >= 0) {
     PRINT("[C]\nSuccessfully requested device %s to generate a Random PIN\n", di);
+    inform_python(di,"unowned","random_pin_request");
   } else {
     PRINT("[C]\nERROR requesting device %s to generate a Random PIN\n", di);
+    inform_python(di,"unowned","random_pin_request_error");
   }
 }
 

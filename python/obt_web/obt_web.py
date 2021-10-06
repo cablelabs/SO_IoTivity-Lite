@@ -90,6 +90,13 @@ def handle_onboard(data):
     device = json.loads(data, object_hook=lambda d: SimpleNamespace(**d))
     onboard_device = my_iotivity.onboard_device(device)
 
+@socketio.on('request_random_pin')
+def handle_random_pin_request(data):
+    print("Random PIN:{}".format(data))
+    device = json.loads(data, object_hook=lambda d: SimpleNamespace(**d))
+    random_pin_ret = my_iotivity.request_random_pin(device)
+    socketio.emit('random_pin_request_return',to_json(random_pin_ret))
+
 @socketio.on('offboard_device')
 def handle_offonboard(data):
     print("Offboard Device:{}".format(data))

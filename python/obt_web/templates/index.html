@@ -876,6 +876,31 @@ function credentials_check(element,uuid){
 	     }
       })
      
+	socket.on( 'random_pin_request_return', function( msg ) {
+		var rdp_return = JSON.parse(msg);
+		console.log("Random PIN Return\n", rdp_return);
+		var uuid = rdp_return.uuid;
+		if (rdp_return.last_event == "random_pin_request"){
+			var pin_entry_container = document.createElement("div");
+			pin_entry_container.setAttribute('id',"pin_entry_container"+uuid);
+		        pin_entry_container.setAttribute('style','margin:1px 2px 2px 2px;font-size:12px;background-color:#000;color:white;padding:7px;width:98%;position:absolute;left:0;top:60px;opacity:0.6');
+			pin_entry_container.innerHTML = "Enter PIN: <br><input type=text></input>";
+			$("#image_container_"+uuid).append(pin_entry_container);
+			console.log("Success");
+		}else if (rdp_return.last_event == "random_pin_request_error"){
+			var error_text = "Please Check device supports Random PIN"
+			$.toast({
+			    heading: 'Error',
+			    text: error_text,
+			    showHideTransition: 'fade',
+			    position: 'top-center',
+			    icon: 'error'
+			});
+			console.log("Fail");
+		}
+	})
+
+
 	socket.on( 'resource_discovery', function( msg ) {
 		var resources = JSON.parse(msg);
 		for (var uuid in resources){
@@ -993,15 +1018,21 @@ function credentials_check(element,uuid){
 
 	function onboardDevice(uuid){
 		console.log("Perform Ownership of UUID:\n"+uuid);
-		//keep track of owned uuid for later deletion from unowned 
-		unowned_delete_stack.push(uuid); 
-		showWait('statusbutton_'+uuid);
+		//Handle Extra call for Random PIN
 		otm = $("#doxm_selector_"+uuid).val();
 		var otm_device = new Object();
 		otm_device.uuid = uuid;
 		otm_device.otm = otm;
-		socket.emit("onboard_device",JSON.stringify(otm_device));
-		discover_devices();
+		if (otm == "randompin"){
+		    console.log("Random Pin Selected");
+		    socket.emit("request_random_pin",JSON.stringify(otm_device));
+		}else{
+			showWait('statusbutton_'+uuid);
+			//keep track of owned uuid for later deletion from unowned 
+			unowned_delete_stack.push(uuid); 
+			socket.emit("onboard_device",JSON.stringify(otm_device));
+			discover_devices();
+		}
 	}
 	
 	function offboardDevice(uuid){

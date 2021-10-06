@@ -68,6 +68,7 @@ resource_event = threading.Event()
 diplomat_event = threading.Event()
 so_event = threading.Event()
 client_event = threading.Event()
+device_event = threading.Event()
 resource_mutex = threading.Lock()
 
 ten_spaces = "          "
@@ -520,7 +521,7 @@ OC_DEVICE_HANDLE._fields_ = (
 #    my_owned_devices.append(my_uuid)
 
 
-CHANGED_CALLBACK = CFUNCTYPE(None, c_char_p, c_char_p)
+CHANGED_CALLBACK = CFUNCTYPE(None, c_char_p, c_char_p, c_char_p)
 DIPLOMAT_CALLBACK = CFUNCTYPE(None, c_char_p, c_char_p, c_char_p,c_char_p,c_char_p,c_char_p)
 RESOURCE_CALLBACK = CFUNCTYPE(None, c_char_p, c_char_p, c_char_p, c_char_p)
 CLIENT_CALLBACK = CFUNCTYPE(None, c_char_p, c_char_p,c_char_p)
@@ -528,12 +529,13 @@ CLIENT_CALLBACK = CFUNCTYPE(None, c_char_p, c_char_p,c_char_p)
 
 class Device():
 
-    def __init__(self,uuid,owned_state=None,name="",resources=None,resource_array=None, credentials=None):
+    def __init__(self,uuid,owned_state=None,name="",resources=None,resource_array=None, credentials=None, last_event=None):
         self.uuid = uuid
         self.owned_state = owned_state
         self.name = name 
         self.credentials = credentials
-        resource_array = []
+        self.resource_array = []
+        self.last_event = last_event 
 
 class Diplomat():
 
@@ -554,20 +556,28 @@ class Iotivity():
     needs to be before _init_
     **********************************"""
 
-    def changedCB(self,uuid,cb_event):
+    def changedCB(self,uuid,cb_state,cb_event):
+        print("Changed event: Device: {}, State:{} Event:{}".format(uuid, cb_state,cb_event))
         name = ""
         if uuid != None:
             uuid = uuid.decode("utf-8")
-            name = self.get_device_name(uuid);
+            name = self.get_device_name(uuid)
+        if cb_state !=  None:
+            cb_state = cb_state.decode("utf-8")
         if cb_event !=  None:
             cb_event = cb_event.decode("utf-8")
-        if(cb_event=="unowned"):
+        if(cb_state=="unowned"):
             print("Unowned Discovery Event:{}".format(uuid))
-            dev = Device(uuid,owned_state=False,name=name)
+            dev = Device(uuid,owned_state=False,name=name,last_event=cb_event)
             if not self.device_array_contains(uuid):
                 self.device_array.append(dev)
+            if cb_event is not None: #update array entry
+                for index, device in enumerate(self.device_array):
+                    if device.uuid==uuid:
+                        self.device_array[index] = dev
+                        device_event.set()
             unowned_event.set()
-        if(cb_event=="owned"):
+        if(cb_state=="owned"):
             print("Owned Discovery Event:{}".format(uuid))
             dev = Device(uuid,owned_state=True,name=name)
             self.device_array.append(dev)
@@ -738,7 +748,7 @@ class Iotivity():
         owned_state=False
         #self.purge_device_array(owned_state)
         unowned_event.wait(5)
-        print("UNOWNED DEVICE ARRAY {}",self.device_array)
+        print("UNOWNED DEVICE ARRAY {}".format(self.device_array))
         return self.device_array
 
     def device_array_contains(self,uuid):
@@ -965,6 +975,21 @@ class Iotivity():
                 del self.resourcelist[device.uuid]
                 break
         self.purge_device_array(device.uuid)
+    
+    def request_random_pin(self,device):
+        device_event.clear()
+        print("Request Random PIN: {}".format(device))
+        self.lib.py_request_random_pin.argtypes = [String]
+        self.lib.py_request_random_pin.restype = None
+        self.lib.py_request_random_pin(device.uuid)
+        device_event.wait(5)
+        ret =""
+        for index, device_a in enumerate(self.device_array):
+            print("uuid:{}, last_event:{}".format(device_a.uuid,device_a.last_event))
+            if device_a.uuid==device.uuid:
+                ret = device_a
+                
+        return ret 
 
     def offboard_device(self,device):
         print ("offboard device :", device)

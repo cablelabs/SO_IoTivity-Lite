@@ -649,6 +649,45 @@ otm_rdp(void)
   otb_mutex_unlock(app_sync_lock);
 }
 
+void
+py_otm_rdp(char* uuid, char* pin)
+{
+  device_handle_t *device = (device_handle_t *)oc_list_head(unowned_devices);
+  device_handle_t *devices[MAX_NUM_DEVICES];
+  int i = 0, c=-1;
+
+  while (device != NULL) {
+    char di[OC_UUID_LEN];
+    oc_uuid_to_str(&device->uuid, di, OC_UUID_LEN);
+    devices[i] = device;
+    if (strcmp(uuid, di) == 0) {
+      c = i;
+    }
+    i++;
+    device = device->next;
+  }
+  if (c == -1)
+  {
+    PRINT("[C] ERROR: Invalid uuid\n");
+    return;
+  }
+
+  otb_mutex_lock(app_sync_lock);
+  int ret = oc_obt_perform_random_pin_otm(
+    &devices[c]->uuid, (const unsigned char *)pin, strlen((const char *)pin), otm_rdp_cb, devices[c]);
+  if (ret >= 0) {
+    PRINT("[C]\nSuccessfully issued request to perform Random PIN OTM\n");
+    /* Having issued an OTM request, remove this item from the unowned device
+     * list
+     */
+    oc_list_remove(unowned_devices, devices[c]);
+  } else {
+    PRINT("[C]\nERROR issuing request to perform Random PIN OTM\n");
+  }
+
+  otb_mutex_unlock(app_sync_lock);
+}
+
 static void
 random_pin_cb(oc_uuid_t *uuid, int status, void *data)
 {

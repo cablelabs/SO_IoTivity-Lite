@@ -965,9 +965,9 @@ class Iotivity():
             self.lib.py_otm_just_works.restype = None
             self.lib.py_otm_just_works(device.uuid)
         if device.otm == "randompin":
-            self.lib.py_request_random_pin.argtypes = [String]
-            self.lib.py_request_random_pin.restype = None
-            self.lib.py_request_random_pin(device.uuid)
+            self.lib.py_otm_rdp.argtypes = [String, String]
+            self.lib.py_otm_rdp.restype = None
+            self.lib.py_otm_rdp(device.uuid,device.random_pin)
 
         #remove unowned uuid form resource list
         for key in self.resourcelist.keys():

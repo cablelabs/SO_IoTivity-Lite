@@ -55,8 +55,10 @@ OC_LIST(owned_devices);
 OC_LIST(unowned_devices);
 
 /* Diplomat resource information */
+#ifdef OC_SO
 static char diplomat_uri[MAX_URI_LENGTH];
 static oc_endpoint_t *diplomat_ep;
+#endif
 
 
 
@@ -794,7 +796,7 @@ otm_cert_cb(oc_uuid_t *uuid, int status, void *data)
     oc_list_add(owned_devices, device);
     inform_python(NULL,NULL,NULL);
   } else {
-    PRINT("[C]\nERROR performing ownership transfer on device %s\n", di);
+    PRINT("[C]\nERROR performing ownership transfer on device %s status %d\n", di,status);
     oc_memb_free(&device_handles, device);
   }
 }
@@ -827,6 +829,45 @@ otm_cert(void)
     return;
   }
 
+  otb_mutex_lock(app_sync_lock);
+
+  int ret = oc_obt_perform_cert_otm(&devices[c]->uuid, otm_cert_cb, devices[c]);
+  if (ret >= 0) {
+    PRINT("[C]\nSuccessfully issued request to perform ownership transfer\n");
+    /* Having issued an OTM request, remove this item from the unowned device
+     * list
+     */
+    oc_list_remove(unowned_devices, devices[c]);
+  } else {
+    PRINT("[C]\nERROR issuing request to perform ownership transfer\n");
+  }
+
+  otb_mutex_unlock(app_sync_lock);
+}
+
+void
+py_otm_cert(char* uuid)
+{
+  PRINT("[C] CERT OTM\n");
+  device_handle_t *device = (device_handle_t *)oc_list_head(unowned_devices);
+  device_handle_t *devices[MAX_NUM_DEVICES];
+  int i = 0, c=-1;
+
+  while (device != NULL) {
+    char di[OC_UUID_LEN];
+    oc_uuid_to_str(&device->uuid, di, OC_UUID_LEN);
+    devices[i] = device;
+    if (strcmp(uuid, di) == 0) {
+      c = i;
+    }
+    i++;
+    device = device->next;
+  }
+  if (c == -1)
+  {
+    PRINT("[C] ERROR: Invalid uuid\n");
+    return;
+  }
   otb_mutex_lock(app_sync_lock);
 
   int ret = oc_obt_perform_cert_otm(&devices[c]->uuid, otm_cert_cb, devices[c]);
@@ -1338,7 +1379,7 @@ reset_device_cb(oc_uuid_t *uuid, int status, void *data)
   if (status >= 0) {
     PRINT("[C]\nSuccessfully performed hard RESET to device %s\n", di);
     state = "reset";
-    inform_python(di,state,NULL);
+    inform_python(di,state,"reset");
   } else {
     PRINT("[C]\nERROR performing hard RESET to device %s\n", di);
   }

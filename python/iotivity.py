@@ -968,6 +968,10 @@ class Iotivity():
             self.lib.py_otm_rdp.argtypes = [String, String]
             self.lib.py_otm_rdp.restype = None
             self.lib.py_otm_rdp(device.uuid,device.random_pin)
+        if device.otm == "mfgcert":
+            self.lib.py_otm_cert.argtypes = [String]
+            self.lib.py_otm_cert.restype = None
+            self.lib.py_otm_cert(device.uuid)
 
         #remove unowned uuid form resource list
         for key in self.resourcelist.keys():

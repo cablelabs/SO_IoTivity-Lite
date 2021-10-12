@@ -12,6 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
 */
 
 //#define OC_SERVER 
@@ -21,7 +22,6 @@
 #include "oc_obt.h"
 #include "port/oc_clock.h"
 #include "security/oc_obt_internal.h"
-#include "oc_streamlined_onboarding.h"
 #include <unistd.h>
 #if defined(_WIN32)
 #include <windows.h>
@@ -33,6 +33,12 @@
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
+
+
+
+#ifdef OC_SO
+#include "oc_streamlined_onboarding.h"
+#endif
 
 #define MAX_NUM_DEVICES (50)
 #define MAX_NUM_RESOURCES (100)
@@ -552,19 +558,28 @@ discover_owned_devices(int scope)
   otb_mutex_unlock(app_sync_lock);
   signal_event_loop();
 }
-
 void
 discover_unowned_devices(int scope)
 {
   //PRINT("[C]discover_unowned_devices: scope %d\n", scope);
   otb_mutex_lock(app_sync_lock);
+#ifdef OC_SO
   if (scope == 0x02) {
-    oc_obt_discover_unowned_devices(unowned_device_cb, NULL, NULL);
+    oc_obt_discover_unowned_devices(unowned_device_cb, NULL,NULL);
   } else if (scope == 0x03) {
     oc_obt_discover_unowned_devices_realm_local_ipv6(unowned_device_cb, NULL,NULL);
   } else if (scope == 0x05) {
     oc_obt_discover_unowned_devices_site_local_ipv6(unowned_device_cb, NULL,NULL);
   }
+#else
+  if (scope == 0x02) {
+    oc_obt_discover_unowned_devices(unowned_device_cb, NULL);
+  } else if (scope == 0x03) {
+    oc_obt_discover_unowned_devices_realm_local_ipv6(unowned_device_cb, NULL);
+  } else if (scope == 0x05) {
+    oc_obt_discover_unowned_devices_site_local_ipv6(unowned_device_cb, NULL);
+  }
+#endif
   otb_mutex_unlock(app_sync_lock);
   signal_event_loop();
 }
@@ -574,6 +589,7 @@ py_discover_unowned_devices(int scope)
 {
   //PRINT("[C]discover_unowned_devices: scope %d\n", scope);
   otb_mutex_lock(app_sync_lock);
+#ifdef OC_SO
   if (scope == 0x02) {
     oc_obt_discover_unowned_devices(unowned_device_cb, NULL,NULL);
   } else if (scope == 0x03) {
@@ -581,6 +597,15 @@ py_discover_unowned_devices(int scope)
   } else if (scope == 0x05) {
     oc_obt_discover_unowned_devices_site_local_ipv6(unowned_device_cb, NULL,NULL);
   }
+#else
+  if (scope == 0x02) {
+    oc_obt_discover_unowned_devices(unowned_device_cb, NULL);
+  } else if (scope == 0x03) {
+    oc_obt_discover_unowned_devices_realm_local_ipv6(unowned_device_cb, NULL);
+  } else if (scope == 0x05) {
+    oc_obt_discover_unowned_devices_site_local_ipv6(unowned_device_cb, NULL);
+  }
+#endif
   otb_mutex_unlock(app_sync_lock);
   signal_event_loop();
 }
@@ -1387,7 +1412,7 @@ reset_device_cb(oc_uuid_t *uuid, int status, void *data)
 
 /**
 * function to retrieve the # owned devices
-*
+**
 */
 int py_get_nr_owned_devices(void)
 {

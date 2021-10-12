@@ -582,6 +582,9 @@ class Iotivity():
             dev = Device(uuid,owned_state=True,name=name)
             self.device_array.append(dev)
             owned_event.set()
+        if(cb_state=="reset"):
+            print("Reset Event:{}".format(uuid))
+            device_event.set()
     
     """ ********************************
     Call back handles streamlined onboarding tasks.
@@ -738,10 +741,11 @@ class Iotivity():
                 self.device_array.pop(index)
         
     def discover_unowned(self):
+        unowned_event.clear()
         print(colored(20*" "+"Discover Unowned Devices"+20*" ",'yellow',attrs=['underline']))
         # OBT application
         ret = self.lib.discover_unowned_devices(c_int(0x05))
-        time.sleep(3)
+        #time.sleep(3)
         # python callback application
         print("discover_unowned- done")
         nr_unowned = self.get_nr_unowned_devices()
@@ -996,10 +1000,12 @@ class Iotivity():
         return ret 
 
     def offboard_device(self,device):
+        device_event.clear()
         print ("offboard device :", device)
         self.lib.py_reset_device.argtypes = [String]
         self.lib.py_reset_device.restype = None
         self.lib.py_reset_device(device)
+        device_event.wait(5)
         
         #remove owned uuid form resource list
         for key in self.resourcelist.keys():
@@ -1007,6 +1013,7 @@ class Iotivity():
                 del self.resourcelist[device]
                 break
         self.purge_device_array(device)
+        return self.device_array
     
     def offboard_all_owned(self):
         print ("listing onboarded devices:")

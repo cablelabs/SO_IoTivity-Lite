@@ -100,7 +100,9 @@ def handle_random_pin_request(data):
 @socketio.on('offboard_device')
 def handle_offonboard(data):
     print("Offboard Device:{}".format(data))
-    onboard_device = my_iotivity.offboard_device(data)
+    offboard_device = my_iotivity.offboard_device(data)
+    time.sleep(5)
+    socketio.emit('offboard_device_return', to_json(offboard_device))
 
 @socketio.on('provision_credentials')
 def handle_pairwise(data):

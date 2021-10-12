@@ -427,8 +427,8 @@ function credentials_check(element,uuid){
 	    if (ownedState == false){
 		var card = document.createElement("div");
 			card.setAttribute('id',uuid);
-			card.setAttribute('class','w3-card-4 w3-grey w3-round');
-			card.setAttribute('style','width:220px;padding:5px;float:left;min-height:200px;margin:5px;display:none');
+			card.setAttribute('class','w3-card-4 w3-grey w3-round device-card');
+			card.setAttribute('style','padding:5px;float:left;min-height:200px;margin:5px;display:none');
 		    var label = document.createElement("header");
 			    label.setAttribute('class','w3-container  w3-round device-label');
 			    label.setAttribute('id','label_'+uuid);
@@ -875,6 +875,11 @@ function credentials_check(element,uuid){
 		  hideWait('button_discover');
 	     }
       })
+
+	socket.on('offboard_device_return', function(msg){
+		var offboard_device = JSON.parse(msg);
+		console.log("OffBoard\n",offboard_device);
+	});
      
 	socket.on( 'random_pin_request_return', function( msg ) {
 		var rdp_return = JSON.parse(msg);

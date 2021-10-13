@@ -4,6 +4,9 @@
   height: 100%;
 }
 
+.device-card {
+	width:240px;
+}
 
 div.unknown_device {
    content:url(images/unknown.png);

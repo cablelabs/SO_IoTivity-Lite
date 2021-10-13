@@ -477,7 +477,7 @@ function credentials_check(element,uuid){
 	      else{
 		var card = document.createElement("div");
 			card.setAttribute('id',uuid);
-			card.setAttribute('class','w3-card-4 w3-grey w3-round');
+			card.setAttribute('class','w3-card-4 w3-grey w3-round device-card');
 			card.setAttribute('style','width:220px;padding:5px;float:left;min-height:200px;margin:5px;display:none');
 		    var label = document.createElement("header");
 			    label.setAttribute('class','w3-container w3-round device-label');
@@ -986,6 +986,8 @@ function credentials_check(element,uuid){
 			devices = devices.filter(function( device ) {
 				return device.uuid !== unowned_delete_stack[d];
 			});
+			console.log("Device array:\n");
+			console.log(devices);
 		}
 		for (var d=0;d<owned_delete_stack.length;d++){
 			console.log("Remove device\n "+ owned_delete_stack[d]);

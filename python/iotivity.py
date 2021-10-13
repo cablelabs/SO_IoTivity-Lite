@@ -576,7 +576,7 @@ class Iotivity():
                     if device.uuid==uuid:
                         self.device_array[index] = dev
                         device_event.set()
-            unowned_event.set()
+            #unowned_event.set()
         if(cb_state=="owned"):
             print("Owned Discovery Event:{}".format(uuid))
             dev = Device(uuid,owned_state=True,name=name)

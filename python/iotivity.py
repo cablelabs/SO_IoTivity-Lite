@@ -693,9 +693,6 @@ class Iotivity():
         print("oc_get_max_app_data_size :", value)
         self.changedCB = CHANGED_CALLBACK(self.changedCB)
         self.lib.install_changedCB(self.changedCB)
-        ret = self.lib.oc_storage_config("./onboarding_tool_creds");
-        print("oc_storage_config : {}".format(ret))
-
         self.resourceCB = RESOURCE_CALLBACK(self.resourceCB)
         self.lib.install_resourceCB(self.resourceCB)
         
@@ -703,7 +700,11 @@ class Iotivity():
         self.lib.install_diplomatCB(self.diplomatCB)
 
         self.clientCB = CLIENT_CALLBACK(self.clientCB)
-        self.lib.install_diplomatCB(self.clientCB)
+        self.lib.install_clientCB(self.clientCB)
+
+        ret = self.lib.oc_storage_config("./onboarding_tool_creds");
+        print("oc_storage_config : {}".format(ret))
+
 
         print ("...")
         self.threadid = threading.Thread(target=self.thread_function, args=())  

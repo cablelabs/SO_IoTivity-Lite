@@ -1,7 +1,7 @@
 #!/bin/bash
 echo `pwd`
 cd ../port/linux
-make clean
+#make clean
 make OC_SO=1 SO_DPP=1 CLOUD=1 CLIENT=1 PKI=1 SECURE=1 libiotivity-lite-client-python.so
 #make CLOUD=1 CLIENT=1 PKI=1 SECURE=1 libiotivity-lite-client-python.so
 cd  ../../python

@@ -216,7 +216,7 @@ void inform_resource_python(const char* anchor, const char* uri, const char* typ
 */
 void inform_diplomat_python(const char* anchor, const char* uri, const char* state, const char* event, const char* target, const char* target_cred)
 {
-  PRINT("[C]inform_python %p\n",my_CBFunctions.diplomatFCB);
+  PRINT("[C]inform diplomat python %p\n",my_CBFunctions.diplomatFCB);
   if (my_CBFunctions.diplomatFCB != NULL) {
     my_CBFunctions.diplomatFCB((char*)anchor,(char*)uri,(char*)state,(char*)event,(char*)target,(char*)target_cred);
   }
@@ -3040,10 +3040,18 @@ streamlined_onboarding_discovery_cb(oc_uuid_t *uuid, oc_endpoint_t *eps, void *d
     return;
   }
   // TODO: This should first prompt for user confirmation before onboarding
-
-  int ret = oc_obt_perform_streamlined_otm(uuid, (const unsigned char *)data, strlen(data), so_otm_cb, NULL);
-  if (ret >= 0) {
-    PRINT("Successfully issued request to perform Streamlined Onboarding OTM\n");
+  int count =0;
+  struct timespec onboarding_wait = { .tv_sec = 5, .tv_nsec = 0 };
+  int ret =0;
+  while (ret <=0 && count < 7){
+	  ret = oc_obt_perform_streamlined_otm(uuid, (const unsigned char *)data, strlen(data), so_otm_cb, NULL);
+	  if (ret >= 0) {
+	    PRINT("[C] Successfully issued request to perform Streamlined Onboarding OTM\n");
+	    break;
+	  }
+        PRINT("[C] Waiting for station to associate\n");
+  	nanosleep(&onboarding_wait, &onboarding_wait);
+	count++;
   }
 }
 static void
@@ -3055,12 +3063,39 @@ perform_streamlined_discovery(oc_so_info_t *so_info)
     memcpy(cred, so_info->cred, strlen(so_info->cred));
     PRINT("After Memcopy\n");
 
-    struct timespec onboarding_wait = { .tv_sec = 20, .tv_nsec = 0 };
-    PRINT("AFTER TIMESPEC\n");
-    nanosleep(&onboarding_wait, &onboarding_wait);
-    PRINT("AFTER SLEEP\n");
-	//
-    oc_obt_discover_unowned_devices(streamlined_onboarding_discovery_cb, so_info->uuid, cred);
+    struct timespec discovery_wait = { .tv_sec = 15, .tv_nsec = 0 };
+    nanosleep(&discovery_wait, &discovery_wait);
+    int count =0;
+    struct timespec onboarding_wait = { .tv_sec = 5, .tv_nsec = 0 };
+    int ret =0;
+    device_handle_t *device = (device_handle_t *)oc_list_head(unowned_devices);
+    int i = 0;
+
+    while (device != NULL) {
+      char di[OC_UUID_LEN];
+      oc_uuid_to_str(&device->uuid, di, OC_UUID_LEN);
+      PRINT("[C][%d]: %s - %s\n", i, di, device->device_name);
+      i++;
+      device = device->next;
+    }
+    PRINT("[C] Trying discovery\n");
+    while (device == NULL || count < 7){
+	  oc_obt_discover_unowned_devices(streamlined_onboarding_discovery_cb, so_info->uuid, cred);
+	  if (ret <= 0) {
+	    PRINT("[C] Successfully discovered station device\n");
+	    break;
+	  }
+	    while (device != NULL) {
+	      char di[OC_UUID_LEN];
+	      oc_uuid_to_str(&device->uuid, di, OC_UUID_LEN);
+	      PRINT("[C][%d]: %s - %s\n", i, di, device->device_name);
+	      i++;
+	      device = device->next;
+	    }
+        PRINT("[C] Waiting for station to associate\n");
+  	nanosleep(&onboarding_wait, &onboarding_wait);
+	count++;
+  }
     //so_info = so_info->next;
   }
   oc_so_info_free(so_info);

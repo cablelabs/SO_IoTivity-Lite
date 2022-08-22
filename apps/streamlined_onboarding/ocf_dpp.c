@@ -5,8 +5,31 @@
 #include "oc_core_res.h"
 #include "oc_streamlined_onboarding.h"
 
+static char ctrl_iface[128];
 static struct wpa_ctrl *ctrl = NULL;
 extern oc_so_info_t self_so_info;
+
+static int
+read_config(char *config_path)
+{
+  FILE *fp = NULL;
+  fp = fopen(config_path, "r");
+  if (!fp) {
+    OC_ERR("Failed to open DPP config file");
+    return -1;
+  }
+
+  char line[128];
+  while (fgets(line, sizeof(line), fp) != NULL) {
+    line[strlen(line) - 1] = '\0';
+    if (line[0] == '#') {
+      continue;
+    }
+    sscanf(line, "ctrl_iface=%s", ctrl_iface);
+  }
+  fclose(fp);
+  return 0;
+}
 
 static oc_so_info_t *
 parse_wpa_event(char *event_buf)
@@ -106,9 +129,9 @@ dpp_send_so_info(void)
 }
 
 int
-dpp_so_init(char *ctrl_iface)
+dpp_so_init(char *config_path)
 {
-  if (ctrl_iface == NULL) {
+  if (read_config(config_path) < 0) {
     return -1;
   }
   ctrl = wpa_ctrl_open(ctrl_iface);

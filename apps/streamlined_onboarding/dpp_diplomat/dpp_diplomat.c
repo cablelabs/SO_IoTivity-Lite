@@ -5,9 +5,9 @@
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <sys/stat.h>
 
+#define FIFOPATH "/tmp/leases"
 static pthread_mutex_t mutex;
 static pthread_cond_t cv;
 static pthread_t event_loop_thread;
@@ -86,6 +86,34 @@ process_so_info(oc_so_info_t *new_info)
   else {
     oc_so_append_info(so_info_list, new_info);
   }
+  /*Poll for device to be onboarded*/
+  if (FIFOPATH == NULL) {
+    OC_ERR("Path to named pipe not set!");
+    return 0;
+  }
+  if (mkfifo(FIFOPATH, 0666) != 0) {
+    OC_WRN("Failed to create named pipe for SO info. Already in place?\n");
+  }
+
+  PRINT("Polling for new device from named pipe...\n");
+
+  FILE *leases_pipe = NULL;
+  char read_buffer[12];
+
+  while (quit != 1) {
+    leases_pipe = fopen(FIFOPATH, "r");
+    if (!leases_pipe) {
+      PRINT("Failed to open named pipe for MAC reading\n");
+      break;
+    } 
+    size_t read_size = fread(read_buffer, 1, 12, leases_pipe);
+    PRINT("Read size: %ld\n", read_size);
+    //if (read_size == 12 && feof(leases_pipe)) {
+    if (read_size == 12) {
+      PRINT("String read: %s\n", read_buffer);
+      break;
+    }
+  }
   int num_notified = oc_notify_observers(res);
   if (num_notified > 0) {
     PRINT("Notified %d observers\n", num_notified);
@@ -148,8 +176,13 @@ handle_signal(int signal)
 }
 
 int
-main(void)
+main(int argc, char *argv[])
 {
+  if (argc < 2) {
+    PRINT("Must pass OCF DPP configuration file!");
+    return -1;
+  }
+
   int init;
   struct sigaction sa;
   sigfillset(&sa.sa_mask);
@@ -170,7 +203,7 @@ main(void)
     return init;
 
   /* Hook into hostapd */
-  if (dpp_so_init(getenv("WPA_CTRL_IFACE")) < 0) {
+  if (dpp_so_init(argv[1]) < 0) {
     PRINT("Failed to connect to hostapd");
     return -1;
   }

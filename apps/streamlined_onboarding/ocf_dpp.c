@@ -4,6 +4,7 @@
 #include "oc_api.h"
 #include "oc_core_res.h"
 #include "oc_streamlined_onboarding.h"
+#include <sys/stat.h>
 
 static struct wpa_ctrl *ctrl = NULL;
 extern oc_so_info_t self_so_info;
@@ -104,6 +105,26 @@ dpp_send_so_info(void)
   OC_DBG("wpa_ctrl response: %s", reply_buf);
   return 0;
 }
+
+FILE* dpp_so_named_pipe_init(char *named_pipe)
+{
+ // Create the named pipe
+    int res = mkfifo(named_pipe, 0666);
+    if (res == -1) {
+        OC_ERR("Failed to create named pipe");
+        return NULL;
+    }
+
+    // Open the named pipe
+    FILE *fd = popen(named_pipe, "r");
+    if (fd == NULL) {
+        OC_ERR("Error opening named pipe");
+        return NULL;
+    }
+
+    return fd;
+}
+
 
 int
 dpp_so_init(char *ctrl_iface)

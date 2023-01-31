@@ -86,6 +86,19 @@ process_so_info(oc_so_info_t *new_info)
   else {
     oc_so_append_info(so_info_list, new_info);
   }
+  char read_buffer[12];
+
+  while (quit != 1) {
+    FILE *pipe = init_pipe(getenv("DHCP_NAMED_PIPE"));
+    size_t read_size = fread(read_buffer, 1, 12, leases_pipe);
+    PRINT("Read size: %ld\n", read_size);
+    //if (read_size == 12 && feof(leases_pipe)) {
+    if (read_size == 12) {
+      PRINT("String read: %s\n", read_buffer);
+      break;
+    }
+  }
+
   int num_notified = oc_notify_observers(res);
   if (num_notified > 0) {
     PRINT("Notified %d observers\n", num_notified);

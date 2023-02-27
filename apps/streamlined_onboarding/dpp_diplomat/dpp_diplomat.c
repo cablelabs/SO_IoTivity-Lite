@@ -18,6 +18,8 @@ static int quit = 0;
 
 static oc_so_info_t *so_info_list = NULL;
 
+ FILE *leases_pipe = NULL;
+
 static void
 get_diplomat(oc_request_t *request, oc_interface_mask_t iface_mask, void *user_data)
 {
@@ -86,6 +88,21 @@ process_so_info(oc_so_info_t *new_info)
   else {
     oc_so_append_info(so_info_list, new_info);
   }
+  
+  char read_buffer[12];
+  
+
+  while (quit != 1) {
+    
+    size_t read_size = fread(read_buffer, 1, 12, leases_pipe);
+    PRINT("Read size: %ld\n", read_size);
+    //if (read_size == 12 && feof(leases_pipe)) {
+    if (read_size == 12) {
+      PRINT("String read: %s\n", read_buffer);
+      break;
+    }
+  }
+  
   int num_notified = oc_notify_observers(res);
   if (num_notified > 0) {
     PRINT("Notified %d observers\n", num_notified);
@@ -168,6 +185,17 @@ main(void)
   init = oc_main_init(&handler);
   if (init < 0)
     return init;
+
+  if(getenv("WPA_CTRL_IFACE") == NULL){
+      PRINT("WPA_CTRL_IFACE environment not set\n");
+       return -1;
+  }
+    if(getenv("DHCP_NAMED_PIPE") == NULL){
+      PRINT("DHCP_NAMED_PIPE environment variable not set\n");
+       return -1;
+  }
+
+  leases_pipe = dpp_so_named_pipe_init(getenv("DHCP_NAMED_PIPE"));
 
   /* Hook into hostapd */
   if (dpp_so_init(getenv("WPA_CTRL_IFACE")) < 0) {

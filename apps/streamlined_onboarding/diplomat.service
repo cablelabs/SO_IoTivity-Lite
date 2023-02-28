@@ -4,6 +4,7 @@ Before=diplomat.service
 After=network.target
 [Service]
 Type=simple
+WorkingDirectory=/var/local/streamlined_onboarding
 Environment=WPA_CTRL_IFACE=/var/run/hostapd/wlan0
 Environment=DHCP_NAMED_PIPE=/var/tmp/leases
 ExecStart=/usr/local/bin/dpp_diplomat

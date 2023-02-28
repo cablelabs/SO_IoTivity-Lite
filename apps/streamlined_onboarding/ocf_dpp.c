@@ -106,23 +106,14 @@ dpp_send_so_info(void)
   return 0;
 }
 
-FILE* dpp_so_named_pipe_init(char *named_pipe)
+void
+dpp_so_named_pipe_init(char *named_pipe)
 {
  // Create the named pipe
     int res = mkfifo(named_pipe, 0666);
     if (res == -1) {
-        OC_ERR("Failed to create named pipe");
-        return NULL;
+        OC_WRN("Failed to create named pipe; already exists?");
     }
-
-    // Open the named pipe
-    FILE *fd = popen(named_pipe, "r");
-    if (fd == NULL) {
-        OC_ERR("Error opening named pipe");
-        return NULL;
-    }
-
-    return fd;
 }
 
 

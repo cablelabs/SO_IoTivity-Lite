@@ -18,7 +18,7 @@ static int quit = 0;
 
 static oc_so_info_t *so_info_list = NULL;
 
- FILE *leases_pipe = NULL;
+FILE *leases_pipe = NULL;
 
 static void
 get_diplomat(oc_request_t *request, oc_interface_mask_t iface_mask, void *user_data)
@@ -94,12 +94,22 @@ process_so_info(oc_so_info_t *new_info)
 
   while (quit != 1) {
     
+    // Open the leases named pipe
+    leases_pipe = fopen(getenv("DHCP_NAMED_PIPE"), "r");
+    if (!leases_pipe) {
+      OC_ERR("Failed to open named pipe for DHCP leases reading\n");
+      break;
+    }
     size_t read_size = fread(read_buffer, 1, 12, leases_pipe);
     PRINT("Read size: %ld\n", read_size);
-    //if (read_size == 12 && feof(leases_pipe)) {
-    if (read_size == 12) {
-      PRINT("String read: %s\n", read_buffer);
-      break;
+    // if (read_size == 12) { // <--- Might need this instead of the below
+    if (read_size == 12 && feof(leases_pipe)) {
+      OC_DBG("Reached DHCP leases pipe EOF\n");
+    }
+    PRINT("String read: %s\n", read_buffer);
+
+    if (leases_pipe && fclose(leases_pipe) != 0) {
+      OC_ERR("Failed to close UUID pipe\n");
     }
   }
   
@@ -195,7 +205,7 @@ main(void)
        return -1;
   }
 
-  leases_pipe = dpp_so_named_pipe_init(getenv("DHCP_NAMED_PIPE"));
+  dpp_so_named_pipe_init(getenv("DHCP_NAMED_PIPE"));
 
   /* Hook into hostapd */
   if (dpp_so_init(getenv("WPA_CTRL_IFACE")) < 0) {

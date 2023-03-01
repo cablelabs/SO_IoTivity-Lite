@@ -105,6 +105,7 @@ process_so_info(oc_so_info_t *new_info)
     // if (read_size == 12) { // <--- Might need this instead of the below
     if (read_size == 12 && feof(leases_pipe)) {
       OC_DBG("Reached DHCP leases pipe EOF\n");
+      break;
     }
     PRINT("String read: %s\n", read_buffer);
 

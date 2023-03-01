@@ -88,32 +88,27 @@ process_so_info(oc_so_info_t *new_info)
   else {
     oc_so_append_info(so_info_list, new_info);
   }
-  
-  char read_buffer[12];
-  
 
-  while (quit != 1) {
-    
-    // Open the leases named pipe
-    leases_pipe = fopen(getenv("DHCP_NAMED_PIPE"), "r");
-    if (!leases_pipe) {
-      OC_ERR("Failed to open named pipe for DHCP leases reading\n");
-      break;
-    }
-    size_t read_size = fread(read_buffer, 1, 12, leases_pipe);
-    PRINT("Read size: %ld\n", read_size);
-    // if (read_size == 12) { // <--- Might need this instead of the below
-    if (read_size == 12 && feof(leases_pipe)) {
-      OC_DBG("Reached DHCP leases pipe EOF\n");
-      break;
-    }
-    PRINT("String read: %s\n", read_buffer);
+  char read_buffer[256];
 
-    if (leases_pipe && fclose(leases_pipe) != 0) {
-      OC_ERR("Failed to close UUID pipe\n");
-    }
+  // Open the leases named pipe
+  leases_pipe = fopen(getenv("DHCP_NAMED_PIPE"), "r");
+  if (!leases_pipe) {
+    OC_ERR("Failed to open named pipe for DHCP leases reading\n");
+    return -1;
   }
-  
+  size_t read_size = fread(read_buffer, 1, 256, leases_pipe);
+  PRINT("Read size: %ld\n", read_size);
+  if (read_size != 256 && feof(leases_pipe)) {
+    OC_DBG("Reached DHCP leases pipe EOF\n");
+  }
+
+  PRINT("String read: %s\n", read_buffer);
+
+  if (leases_pipe && fclose(leases_pipe) != 0) {
+    OC_ERR("Failed to close UUID pipe\n");
+  }
+
   int num_notified = oc_notify_observers(res);
   if (num_notified > 0) {
     PRINT("Notified %d observers\n", num_notified);
